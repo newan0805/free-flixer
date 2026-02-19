@@ -1,0 +1,66 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "es6"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./app/*"],
+      "@components/*": ["./src/components/*"],
+      "@controllers/*": ["./src/controllers/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@types/*": ["./src/types/*"]
+    }
+  },
+  "include": ["next-env.d.js", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+// /** @type {import('next').NextConfig} */
+// const nextConfig = {
+//   images: {
+//     remotePatterns: [
+//       {
+//         protocol: 'https',
+//         hostname: 'image.tmdb.org',
+//         port: '',
+//         pathname: '/t/p/**',
+//       },
+//     ],
+//   },
+//   // Configure Turbopack to work with our @ alias paths
+//   turbopack: {
+//     resolve: {
+//       alias: {
+//         '@': __dirname,
+//         '@components': __dirname + '/src/components',
+//         '@controllers': __dirname + '/src/controllers',
+//         '@utils': __dirname + '/src/utils',
+//       },
+//     },
+//   },
+//   // Configure webpack to work with our @ alias paths (for compatibility)
+//   webpack: (config) => {
+//     config.resolve.alias['@'] = __dirname;
+//     config.resolve.alias['@components'] = __dirname + '/src/components';
+//     config.resolve.alias['@controllers'] = __dirname + '/src/controllers';
+//     config.resolve.alias['@utils'] = __dirname + '/src/utils';
+//     return config;
+//   },
+// };
+
+// module.exports = nextConfig;
