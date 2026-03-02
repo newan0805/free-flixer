@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { tmdbService } from "@controllers/tmdb";
+import { getAvailableServers, getSavedServer, saveServer, getEmbedUrl } from "@utils/servers";
 import Navigation from "@components/Navigation";
 
 const WatchPage = ({ params }) => {
@@ -11,6 +12,9 @@ const WatchPage = ({ params }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedServer, setSelectedServer] = useState('');
+  const [availableServers, setAvailableServers] = useState([]);
+  const [currentUrl, setCurrentUrl] = useState('');
 
   // Get URL parameters for season and episode
   const [urlParams, setUrlParams] = useState({ season: 1, episode: 1 });
@@ -26,6 +30,24 @@ const WatchPage = ({ params }) => {
 
     fetchContentDetails();
   }, [unwrappedParams.type, unwrappedParams.id]);
+
+  useEffect(() => {
+    // Initialize servers and selected server
+    const servers = getAvailableServers();
+    const savedServer = getSavedServer();
+    
+    setAvailableServers(servers);
+    setSelectedServer(savedServer);
+    
+    // Generate initial URL
+    const url = getEmbedUrl(savedServer, {
+      contentType: unwrappedParams.type,
+      tmdbId: unwrappedParams.id,
+      season: urlParams.season,
+      episode: urlParams.episode
+    });
+    setCurrentUrl(url);
+  }, [unwrappedParams.type, unwrappedParams.id, urlParams.season, urlParams.episode]);
 
   const fetchContentDetails = async () => {
     try {
@@ -118,12 +140,36 @@ const WatchPage = ({ params }) => {
       {/* <Navigation /> */}
 
       <main className="relative pt-16 md:pt-20">
+        {/* Server Selection */}
+        {availableServers.length > 1 && (
+          <div className="max-w-6xl mx-auto px-4 mb-4">
+            <div className="bg-black bg-opacity-80 rounded-lg p-3">
+              <label className="block text-gray-300 text-xs mb-2">Server</label>
+              <div className="flex flex-wrap gap-2">
+                {availableServers.map((server) => (
+                  <button
+                    key={server.id}
+                    onClick={() => handleServerChange(server.id)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      selectedServer === server.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {server.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Player Wrapper */}
         <div className="relative w-full max-w-6xl mx-auto px-4 pt-6">
           {/* Responsive Video Container */}
           <div className="relative w-full max-w-6xl mx-auto aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
             <iframe
-              src={getVidsrcUrl()}
+              src={currentUrl || getVidsrcUrl()}
               className="w-full h-full border-0"
               allowFullScreen
               allow="autoplay; encrypted-media; picture-in-picture"

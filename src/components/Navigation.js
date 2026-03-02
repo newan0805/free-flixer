@@ -187,6 +187,12 @@ const Navigation = () => {
               TV Shows
             </button>
             <button
+              onClick={() => router.push('/my-list')}
+              className="text-gray-300 hover:text-white transition-colors font-medium"
+            >
+              My List
+            </button>
+            <button
               onClick={() => router.push('/search')}
               className="text-gray-300 hover:text-white transition-colors font-medium"
             >

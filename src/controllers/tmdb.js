@@ -113,7 +113,16 @@ export const tmdbService = {
       return await handleResponse(response);
     } catch (error) {
       console.error("Error fetching movie details:", error);
-      return null;
+      // Return a minimal object to prevent breaking the UI
+      return {
+        id,
+        title: 'Unknown Movie',
+        overview: 'Details not available',
+        poster_path: null,
+        backdrop_path: null,
+        vote_average: 0,
+        release_date: null
+      };
     }
   },
 
@@ -124,7 +133,16 @@ export const tmdbService = {
       return await handleResponse(response);
     } catch (error) {
       console.error("Error fetching TV details:", error);
-      return null;
+      // Return a minimal object to prevent breaking the UI
+      return {
+        id,
+        name: 'Unknown TV Show',
+        overview: 'Details not available',
+        poster_path: null,
+        backdrop_path: null,
+        vote_average: 0,
+        first_air_date: null
+      };
     }
   },
 

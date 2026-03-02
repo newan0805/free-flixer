@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { tmdbService } from '@controllers/tmdb';
+import { myList } from '@utils/myList';
 import VideoPlayer from '@components/VideoPlayer';
 import MovieCard from '@components/MovieCard';
 
@@ -12,10 +13,17 @@ const MovieDetailsPage = ({ params }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
+  const [isInMyList, setIsInMyList] = useState(false);
 
   useEffect(() => {
     fetchMovieDetails();
   }, [unwrappedParams.id]);
+
+  useEffect(() => {
+    if (movie) {
+      setIsInMyList(myList.isInList(movie.id, 'movie'));
+    }
+  }, [movie]);
 
   const fetchMovieDetails = async () => {
     try {
@@ -33,6 +41,30 @@ const MovieDetailsPage = ({ params }) => {
       console.error('Error fetching movie details:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleMyListToggle = () => {
+    if (!movie) return;
+
+    const listItem = {
+      id: movie.id,
+      title: movie.title || movie.name,
+      type: 'movie',
+      poster_path: movie.poster_path,
+      overview: movie.overview,
+      release_date: movie.release_date,
+      first_air_date: movie.first_air_date,
+      vote_average: movie.vote_average,
+      genre_ids: movie.genre_ids || []
+    };
+
+    if (isInMyList) {
+      myList.removeItem(movie.id, 'movie');
+      setIsInMyList(false);
+    } else {
+      myList.addItem(listItem);
+      setIsInMyList(true);
     }
   };
 
@@ -127,11 +159,21 @@ const MovieDetailsPage = ({ params }) => {
                     Play Now
                   </button>
                   
-                  <button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center gap-2">
+                  <button 
+                    className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors ${
+                      isInMyList 
+                        ? 'bg-red-600 hover:bg-red-700 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                    onClick={handleMyListToggle}
+                  >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                            d={isInMyList 
+                              ? "M5 5A7 7 0 0119 9v10a2 2 0 01-2 2H7a2 2 0 01-2-2V9z M12 12l-2 2 4 4 4-4-2-2" 
+                              : "M4 7h16M4 12h16M4 17h16"} />
                     </svg>
-                    Add to My List
+                    {isInMyList ? 'Remove from My List' : 'Add to My List'}
                   </button>
                 </div>
               </div>

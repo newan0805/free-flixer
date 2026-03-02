@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { tmdbService } from '@controllers/tmdb';
+import { myList } from '@utils/myList';
 import MovieCard from '@components/MovieCard';
 import Navigation from '@components/Navigation';
 
@@ -85,7 +86,7 @@ const SearchPage = () => {
         {hasSearched && (
           <>
             {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {[...Array(10)].map((_, index) => (
                   <div key={index} className="bg-gray-800 rounded-lg animate-pulse">
                     <div className="w-full h-64 bg-gray-700 rounded-t-lg"></div>
@@ -105,7 +106,7 @@ const SearchPage = () => {
                   <p className="text-gray-400">{results.length} results found</p>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {results.map((item) => (
                     <MovieCard
                       key={item.id}

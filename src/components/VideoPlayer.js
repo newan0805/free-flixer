@@ -1,14 +1,42 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getAvailableServers, getSavedServer, saveServer, getEmbedUrl } from '@utils/servers';
 
 const VideoPlayer = ({ title, onClose, type = 'movie', tmdbId, season = 1, episode = 1 }) => {
-  // Generate Vidsrc embed URL
-  const getVidsrcUrl = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_VIDSRC_BASE_URL;
+  const [selectedServer, setSelectedServer] = useState('');
+  const [availableServers, setAvailableServers] = useState([]);
+  const [currentUrl, setCurrentUrl] = useState('');
+
+  useEffect(() => {
+    // Initialize servers and selected server
+    const servers = getAvailableServers();
+    const savedServer = getSavedServer();
     
-    if (type === 'movie') {
-      return `${baseUrl}/movie/${tmdbId}`;
-    } else {
-      return `${baseUrl}/tv/${tmdbId}/${season}/${episode}`;
-    }
+    setAvailableServers(servers);
+    setSelectedServer(savedServer);
+    
+    // Generate initial URL
+    const url = getEmbedUrl(savedServer, {
+      contentType: type,
+      tmdbId,
+      season,
+      episode
+    });
+    setCurrentUrl(url);
+  }, [type, tmdbId, season, episode]);
+
+  const handleServerChange = (serverId) => {
+    setSelectedServer(serverId);
+    saveServer(serverId);
+    
+    const url = getEmbedUrl(serverId, {
+      contentType: type,
+      tmdbId,
+      season,
+      episode
+    });
+    setCurrentUrl(url);
   };
 
   return (
@@ -29,15 +57,48 @@ const VideoPlayer = ({ title, onClose, type = 'movie', tmdbId, season = 1, episo
         <p className="text-gray-300 text-sm">{type === 'movie' ? 'Movie' : `TV Show • Season ${season} Episode ${episode}`}</p>
       </div>
 
+      {/* Server Selection */}
+      {availableServers.length > 1 && (
+        <div className="absolute top-20 left-4 right-4 z-10">
+          <div className="bg-black bg-opacity-80 rounded-lg p-3">
+            <label className="block text-gray-300 text-xs mb-2">Server</label>
+            <div className="flex flex-wrap gap-2">
+              {availableServers.map((server) => (
+                <button
+                  key={server.id}
+                  onClick={() => handleServerChange(server.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    selectedServer === server.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {server.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Video Container - Responsive iframe */}
       <div className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-        <iframe
-          src={getVidsrcUrl()}
-          className="w-full h-full border-0"
-          allowFullScreen
-          allow="autoplay; encrypted-media; picture-in-picture"
-          title={`${title} Video Player`}
-        />
+        {currentUrl ? (
+          <iframe
+            src={currentUrl}
+            className="w-full h-full border-0"
+            allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture"
+            title={`${title} Video Player`}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-900">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-400 text-sm mt-2">Loading video...</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
