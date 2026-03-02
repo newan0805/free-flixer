@@ -5,6 +5,7 @@ import { tmdbService } from '@controllers/tmdb';
 import { myList } from '@utils/myList';
 import MovieCard from '@components/MovieCard';
 import Navigation from '@components/Navigation';
+import ViewModeToggle from '@components/ViewModeToggle';
 
 const MyListPage = () => {
   const [myListItems, setMyListItems] = useState([]);
@@ -12,6 +13,7 @@ const MyListPage = () => {
   const [toWatchLaterItems, setToWatchLaterItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('my-list');
+  const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
     fetchListItems();
@@ -125,7 +127,11 @@ const MyListPage = () => {
 
     if (isLoading) {
       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className={`grid gap-6 ${
+          viewMode === 'grid' 
+            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            : 'grid-cols-1'
+        }`}>
           {[...Array(8)].map((_, index) => (
             <div key={index} className="bg-gray-800 rounded-lg animate-pulse">
               <div className="w-full h-64 bg-gray-700 rounded-t-lg"></div>
@@ -149,12 +155,17 @@ const MyListPage = () => {
     }
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      <div className={`grid gap-6 ${
+        viewMode === 'grid' 
+          ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          : 'grid-cols-1'
+      }`}>
         {items.map((item) => (
           <div key={`${item.id}-${item.type}`} className="relative group">
             <MovieCard
               movie={item}
               onClick={handleCardClick}
+              className={viewMode === 'collection' ? 'max-w-4xl mx-auto' : ''}
             />
             
             {/* Action buttons overlay */}
@@ -205,38 +216,44 @@ const MyListPage = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-6">My List</h1>
           
-          {/* Tab Navigation */}
-          <div className="flex flex-wrap gap-4 border-b border-gray-800 pb-4">
-            <button
-              onClick={() => setActiveTab('my-list')}
-              className={`px-6 py-3 rounded-full font-medium transition-colors ${
-                activeTab === 'my-list'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              My List ({myListItems.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('watched')}
-              className={`px-6 py-3 rounded-full font-medium transition-colors ${
-                activeTab === 'watched'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              Watched ({watchedItems.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('to-watch-later')}
-              className={`px-6 py-3 rounded-full font-medium transition-colors ${
-                activeTab === 'to-watch-later'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
-            >
-              To Watch Later ({toWatchLaterItems.length})
-            </button>
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-800 pb-4">
+            {/* Tab Navigation */}
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => setActiveTab('my-list')}
+                className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                  activeTab === 'my-list'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                My List ({myListItems.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('watched')}
+                className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                  activeTab === 'watched'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                Watched ({watchedItems.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('to-watch-later')}
+                className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                  activeTab === 'to-watch-later'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                To Watch Later ({toWatchLaterItems.length})
+              </button>
+            </div>
+
+            {/* View Mode Toggle */}
+            <ViewModeToggle currentView={viewMode} onViewChange={setViewMode} />
           </div>
         </div>
 
