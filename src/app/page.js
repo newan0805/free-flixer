@@ -14,12 +14,28 @@ export default function Home() {
         
         {/* Content Sections */}
         <div className="max-w-7xl mx-auto px-4 py-8">
-          {/* Trending Now */}
+          {/* Trending All */}
           <ContentSection 
-            title="Trending Now" 
+            title="Trending All" 
             category="trending" 
-            type="movie" 
+            type="all" 
             limit={10}
+          />
+          
+          {/* Trending Movies */}
+          <ContentSection 
+            title="Trending Movies" 
+            category="trending_movies" 
+            type="movie" 
+            limit={12}
+          />
+          
+          {/* Trending TV Shows */}
+          <ContentSection 
+            title="Trending TV Shows" 
+            category="trending_tv" 
+            type="tv" 
+            limit={12}
           />
           
           {/* Popular Movies */}
@@ -38,10 +54,42 @@ export default function Home() {
             limit={12}
           />
           
+          {/* Now Playing Movies */}
+          <ContentSection 
+            title="Now Playing Movies" 
+            category="now_playing" 
+            type="movie" 
+            limit={12}
+          />
+          
           {/* Popular TV Shows */}
           <ContentSection 
             title="Popular TV Shows" 
             category="popular" 
+            type="tv" 
+            limit={12}
+          />
+          
+          {/* Top Rated TV Shows */}
+          <ContentSection 
+            title="Top Rated TV Shows" 
+            category="top_rated" 
+            type="tv" 
+            limit={12}
+          />
+          
+          {/* Airing Today TV Shows */}
+          <ContentSection 
+            title="Airing Today TV Shows" 
+            category="airing_today" 
+            type="tv" 
+            limit={12}
+          />
+          
+          {/* On The Air TV Shows */}
+          <ContentSection 
+            title="On The Air TV Shows" 
+            category="on_the_air" 
             type="tv" 
             limit={12}
           />

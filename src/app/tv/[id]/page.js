@@ -16,6 +16,7 @@ const TVDetailsPage = ({ params }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
   const [isInMyList, setIsInMyList] = useState(false);
+  const [watchProgress, setWatchProgress] = useState(null);
 
   useEffect(() => {
     fetchTVShowDetails();
@@ -24,6 +25,14 @@ const TVDetailsPage = ({ params }) => {
   useEffect(() => {
     if (tvShow) {
       setIsInMyList(myList.isInList(tvShow.id, 'tv'));
+      
+      // Load watch progress for this TV show
+      const progress = myList.getWatchProgress(tvShow.id);
+      if (progress) {
+        setWatchProgress(progress);
+        setSelectedSeason(progress.season);
+        setSelectedEpisode(progress.episode);
+      }
     }
   }, [tvShow]);
 
@@ -65,6 +74,10 @@ const TVDetailsPage = ({ params }) => {
   };
 
   const handlePlayNow = () => {
+    // Save current watch progress before playing
+    if (tvShow) {
+      myList.saveWatchProgress(tvShow.id, selectedSeason, selectedEpisode);
+    }
     setIsVideoPlayerOpen(true);
   };
 
@@ -181,50 +194,42 @@ const TVDetailsPage = ({ params }) => {
                   {/* Season Selection */}
                   <div className="mb-4">
                     <label className="block text-gray-400 text-sm mb-2">Season</label>
-                    <div className="flex flex-wrap gap-2">
+                    <select
+                      value={selectedSeason}
+                      onChange={(e) => handleSeasonChange(parseInt(e.target.value))}
+                      className="w-full bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-600 focus:border-blue-500 focus:outline-none"
+                    >
                       {tvShow.seasons && tvShow.seasons
                         .filter(season => season.season_number > 0) // Filter out season 0 (specials)
                         .sort((a, b) => a.season_number - b.season_number)
                         .map((season) => (
-                          <button
-                            key={season.id}
-                            onClick={() => handleSeasonChange(season.season_number)}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                              selectedSeason === season.season_number
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                            }`}
-                          >
+                          <option key={season.id} value={season.season_number}>
                             Season {season.season_number}
-                          </button>
+                          </option>
                         ))}
-                    </div>
+                    </select>
                   </div>
 
                   {/* Episode Selection */}
                   <div>
                     <label className="block text-gray-400 text-sm mb-2">Episode</label>
-                    <div className="flex flex-wrap gap-2">
+                    <select
+                      value={selectedEpisode}
+                      onChange={(e) => handleEpisodeChange(parseInt(e.target.value))}
+                      className="w-full bg-gray-800 text-white px-4 py-2 rounded-md border border-gray-600 focus:border-blue-500 focus:outline-none"
+                    >
                       {tvShow.seasons && (() => {
                         const currentSeason = tvShow.seasons.find(s => s.season_number === selectedSeason);
                         if (currentSeason && currentSeason.episode_count > 0) {
                           return Array.from({ length: currentSeason.episode_count }, (_, i) => i + 1).map((episodeNum) => (
-                            <button
-                              key={episodeNum}
-                              onClick={() => handleEpisodeChange(episodeNum)}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                selectedEpisode === episodeNum
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                              }`}
-                            >
+                            <option key={episodeNum} value={episodeNum}>
                               Episode {episodeNum}
-                            </button>
+                            </option>
                           ));
                         }
-                        return <p className="text-gray-400">No episodes available</p>;
+                        return <option value="">No episodes available</option>;
                       })()}
-                    </div>
+                    </select>
                   </div>
                 </div>
 
@@ -256,6 +261,24 @@ const TVDetailsPage = ({ params }) => {
                     </svg>
                     {isInMyList ? 'Remove from My List' : 'Add to My List'}
                   </button>
+
+                  {/* Resume Button */}
+                  {watchProgress && (
+                    <button 
+                      className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition-colors"
+                      onClick={() => {
+                        setSelectedSeason(watchProgress.season);
+                        setSelectedEpisode(watchProgress.episode);
+                        handlePlayNow();
+                      }}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Resume from S{watchProgress.season}E{watchProgress.episode}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

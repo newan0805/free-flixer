@@ -6,11 +6,18 @@ const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL;
 // API endpoints
 const endpoints = {
   trending: "/trending/all/week",
+  trendingMovies: "/trending/movie/day",
+  trendingTV: "/trending/tv/day",
   movies: "/discover/movie",
   tv: "/discover/tv",
   popular: "/movie/popular",
   topRated: "/movie/top_rated",
   upcoming: "/movie/upcoming",
+  nowPlaying: "/movie/now_playing",
+  tvAiringToday: "/tv/airing_today",
+  tvOnTheAir: "/tv/on_the_air",
+  tvPopular: "/tv/popular",
+  tvTopRated: "/tv/top_rated",
   search: "/search/multi",
   movieDetails: "/movie",
   tvDetails: "/tv",
@@ -57,6 +64,28 @@ export const tmdbService = {
     }
   },
 
+  // Get trending movies
+  getTrendingMovies: async () => {
+    try {
+      const response = await fetch(buildUrl(endpoints.trendingMovies));
+      return await handleResponse(response);
+    } catch (error) {
+      console.error("Error fetching trending movies:", error);
+      return { results: [] };
+    }
+  },
+
+  // Get trending TV shows
+  getTrendingTV: async () => {
+    try {
+      const response = await fetch(buildUrl(endpoints.trendingTV));
+      return await handleResponse(response);
+    } catch (error) {
+      console.error("Error fetching trending TV:", error);
+      return { results: [] };
+    }
+  },
+
   // Get movies by category
   getMovies: async (category = "popular", page = 1) => {
     try {
@@ -67,7 +96,9 @@ export const tmdbService = {
             ? endpoints.topRated
             : category === "upcoming"
               ? endpoints.upcoming
-              : endpoints.movies;
+              : category === "now_playing"
+                ? endpoints.nowPlaying
+                : endpoints.movies;
 
       const response = await fetch(buildUrl(endpoint, { page }));
       return await handleResponse(response);
@@ -82,10 +113,14 @@ export const tmdbService = {
     try {
       const endpoint =
         category === "popular"
-          ? "/tv/popular"
+          ? endpoints.tvPopular
           : category === "top_rated"
-            ? "/tv/top_rated"
-            : endpoints.tv;
+            ? endpoints.tvTopRated
+            : category === "airing_today"
+              ? endpoints.tvAiringToday
+              : category === "on_the_air"
+                ? endpoints.tvOnTheAir
+                : endpoints.tv;
 
       const response = await fetch(buildUrl(endpoint, { page }));
       return await handleResponse(response);

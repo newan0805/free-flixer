@@ -191,5 +191,68 @@ export const myList = {
     } catch (error) {
       console.error('Error clearing all lists:', error);
     }
+  },
+
+  // Get watch progress for TV shows
+  getWatchProgress(tvId) {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      const progress = localStorage.getItem(`watchProgress_${tvId}`);
+      return progress ? JSON.parse(progress) : null;
+    } catch (error) {
+      console.error('Error reading watch progress:', error);
+      return null;
+    }
+  },
+
+  // Save watch progress for TV shows
+  saveWatchProgress(tvId, season, episode) {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const progress = {
+        season: season,
+        episode: episode,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`watchProgress_${tvId}`, JSON.stringify(progress));
+    } catch (error) {
+      console.error('Error saving watch progress:', error);
+    }
+  },
+
+  // Clear watch progress for TV shows
+  clearWatchProgress(tvId) {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      localStorage.removeItem(`watchProgress_${tvId}`);
+    } catch (error) {
+      console.error('Error clearing watch progress:', error);
+    }
+  },
+
+  // Get all watch progress data
+  getAllWatchProgress() {
+    if (typeof window === 'undefined') return {};
+    
+    try {
+      const progressData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('watchProgress_')) {
+          const tvId = key.replace('watchProgress_', '');
+          const progress = localStorage.getItem(key);
+          if (progress) {
+            progressData[tvId] = JSON.parse(progress);
+          }
+        }
+      }
+      return progressData;
+    } catch (error) {
+      console.error('Error reading all watch progress:', error);
+      return {};
+    }
   }
 };

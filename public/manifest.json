@@ -1,28 +1,113 @@
 {
-  "name": "Free Flixer",
+  "name": "Free-Flixer",
   "short_name": "Flixer",
   "description": "A Netflix-like streaming platform using TMDB API",
   "start_url": "/",
-  "display": "standalone",
+  "categories": ["entertainment"],
+  "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "icons": [
+    {
+      "src": "/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-1024x1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1280x720.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-720x1280.png",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Movies",
+      "short_name": "Movies",
+      "description": "Browse Movies",
+      "url": "/movies",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "TV Shows",
+      "short_name": "TV Shows",
+      "description": "Browse TV Shows",
+      "url": "/tv",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "My List",
+      "short_name": "My List",
+      "description": "View My List",
+      "url": "/my-list",
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+free-flixer",
+      "url": "/?action=%s"
     }
   ]
 }

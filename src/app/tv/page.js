@@ -15,7 +15,7 @@ const TVPage = () => {
   const categories = [
     { key: "popular", label: "Popular" },
     { key: "top_rated", label: "Top Rated" },
-    { key: "on_the_air", label: "On TV" },
+    { key: "on_the_air", label: "On The Air" },
     { key: "airing_today", label: "Airing Today" },
   ];
 

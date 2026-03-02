@@ -16,6 +16,10 @@ const ContentSection = ({ title, category, type = 'movie', limit = 20 }) => {
 
         if (category === 'trending') {
           response = await tmdbService.getTrending('week');
+        } else if (category === 'trending_movies') {
+          response = await tmdbService.getTrendingMovies();
+        } else if (category === 'trending_tv') {
+          response = await tmdbService.getTrendingTV();
         } else if (type === 'movie') {
           response = await tmdbService.getMovies(category);
         } else {
