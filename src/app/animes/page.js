@@ -96,10 +96,10 @@ const AnimesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* <Navigation /> */}
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 glass">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
@@ -117,7 +117,13 @@ const AnimesPage = () => {
 
         {/* Loading State */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div
+            className={`grid gap-6 ${
+              viewMode === 'grid'
+                ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+                : 'grid-cols-1'
+            }`}
+          >
             {[...Array(10)].map((_, index) => (
               <div key={index} className="bg-gray-800 rounded-lg animate-pulse">
                 <div className="w-full h-64 bg-gray-700 rounded-t-lg"></div>
@@ -136,7 +142,7 @@ const AnimesPage = () => {
             <p className="text-gray-400">{error}</p>
             <button
               onClick={fetchAnimes}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+              className="mt-4 glass border border-white text-white hover:bg-white/10 px-6 py-2 rounded-md font-medium transition-colors"
             >
               Try Again
             </button>
@@ -145,7 +151,7 @@ const AnimesPage = () => {
           <div
             className={`grid gap-6 ${
               viewMode === "grid"
-                ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
                 : "grid-cols-1"
             }`}
           >
@@ -170,7 +176,7 @@ const AnimesPage = () => {
             </p>
             <button
               onClick={fetchAnimes}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors"
+              className="mt-4 glass border border-white text-white hover:bg-white/10 px-6 py-2 rounded-md font-medium transition-colors"
             >
               Refresh
             </button>
@@ -182,7 +188,7 @@ const AnimesPage = () => {
           <div className="mt-8 text-center">
             <button
               onClick={loadMore}
-              className="text-white px-6 py-3 rounded-md font-medium transition-colors"
+              className="glass border border-white text-white hover:bg-white/10 px-6 py-3 rounded-md font-medium transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

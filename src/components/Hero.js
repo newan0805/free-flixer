@@ -23,9 +23,15 @@ const Hero = () => {
           const randomIndex = Math.floor(Math.random() * response.results.length);
           const movie = response.results[randomIndex];
           
-          // Fetch detailed info for the featured movie
-          const details = await tmdbService.getMovieDetails(movie.id);
-          setFeaturedMovie(details || movie);
+          // Fetch detailed info for the featured item (movie or tv)
+          let details;
+          if (movie.media_type === 'tv') {
+            details = await tmdbService.getTVDetails(movie.id);
+          } else {
+            details = await tmdbService.getMovieDetails(movie.id);
+          }
+          // preserve media_type so we can route correctly later
+          setFeaturedMovie({ ...(details || movie), media_type: movie.media_type });
         }
       } catch (error) {
         console.error('Error fetching featured movie:', error);
@@ -146,7 +152,7 @@ const Hero = () => {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button 
-            className="netflix-button flex items-center justify-center gap-2 text-lg"
+            className="netflix-button glass border border-blue-600 text-blue-600 hover:bg-blue-600/10 flex items-center justify-center gap-2 text-lg"
             onClick={handlePlayNow}
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -156,7 +162,7 @@ const Hero = () => {
           </button>
           
           <button 
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-md text-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="glass border border-white text-white px-6 py-3 rounded-md text-lg font-medium transition-colors flex items-center justify-center gap-2"
             onClick={handleMoreInfo}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,11 +172,11 @@ const Hero = () => {
           </button>
 
           <button 
-            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-md text-lg font-medium transition-colors ${
+            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-md text-lg font-medium transition-colors glass border ${
               isInMyList 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-gray-700 hover:bg-gray-600 text-white'
-            }`}
+                ? 'border-red-600 text-red-600' 
+                : 'border-white text-white'
+            } hover:bg-white/10`}
             onClick={handleMyListToggle}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

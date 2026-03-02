@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Free Flixer - Netflix Clone',
+  title: 'Free Flixer',
   description: 'A Netflix-like streaming platform using TMDB API',
   manifest: '/manifest.json',
   themeColor: '#000000',
@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#000000" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="bg-black text-white">
+      <body className="bg-gradient-to-b from-black via-blue-900 to-black text-white">
         {/* Common Navigation for all pages */}
         <Navigation />
         

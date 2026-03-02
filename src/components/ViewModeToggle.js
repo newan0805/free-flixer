@@ -8,7 +8,7 @@ const ViewModeToggle = ({ currentView, onViewChange }) => {
   return (
     <div className="flex items-center space-x-3">
       <span className="text-gray-400 text-sm font-medium">View:</span>
-      <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
+      <div className="flex glass rounded-lg p-1">
         {/* Grid View Button */}
         <button
           onClick={() => onViewChange('grid')}
@@ -16,8 +16,8 @@ const ViewModeToggle = ({ currentView, onViewChange }) => {
           onMouseLeave={() => setIsHovered(false)}
           className={`relative p-2 rounded-md transition-all duration-200 ${
             currentView === 'grid'
-              ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              ? 'border border-blue-600 text-blue-600 shadow-lg shadow-blue-500/25'
+              : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
           }`}
           title="Grid View"
         >
@@ -39,8 +39,8 @@ const ViewModeToggle = ({ currentView, onViewChange }) => {
           onMouseLeave={() => setIsHovered(false)}
           className={`relative p-2 rounded-md transition-all duration-200 ${
             currentView === 'collection'
-              ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              ? 'border border-purple-600 text-purple-600 shadow-lg shadow-purple-500/25'
+              : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
           }`}
           title="Collection View"
         >

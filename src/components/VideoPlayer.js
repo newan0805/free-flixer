@@ -60,22 +60,36 @@ const VideoPlayer = ({ title, onClose, type = 'movie', tmdbId, season = 1, episo
       {/* Server Selection */}
       {availableServers.length > 1 && (
         <div className="absolute top-20 left-4 right-4 z-10">
-          <div className="bg-black bg-opacity-80 rounded-lg p-3">
+          <div className="glass rounded-lg p-3">
             <label className="block text-gray-300 text-xs mb-2">Server</label>
-            <div className="flex flex-wrap gap-2">
-              {availableServers.map((server) => (
-                <button
-                  key={server.id}
-                  onClick={() => handleServerChange(server.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                    selectedServer === server.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  {server.name}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2 items-center">
+              <select
+                value={selectedServer}
+                onChange={(e) => handleServerChange(e.target.value)}
+                className="glass text-white px-3 py-1 rounded-md text-xs font-medium focus:outline-none"
+              >
+                {availableServers.map((server) => (
+                  <option key={server.id} value={server.id} className="bg-black">
+                    {server.name}
+                  </option>
+                ))}
+              </select>
+
+              <div className="flex flex-wrap gap-2">
+                {availableServers.map((server) => (
+                  <button
+                    key={server.id}
+                    onClick={() => handleServerChange(server.id)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors glass border ${
+                      selectedServer === server.id
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-300 hover:border-gray-300 hover:text-white'
+                    } hover:bg-white/10`}
+                  >
+                    {server.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

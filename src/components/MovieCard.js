@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-const MovieCard = ({ movie, onClick }) => {
+const MovieCard = ({ movie, onClick, className = "" }) => {
   const imageUrl = movie.poster_path 
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
     : '/placeholder-image.jpg';
@@ -12,7 +12,7 @@ const MovieCard = ({ movie, onClick }) => {
 
   return (
     <div 
-      className="movie-card group cursor-pointer"
+      className={`movie-card group cursor-pointer ${className}`}
       onClick={() => onClick && onClick(movie)}
     >
       <div className="relative overflow-hidden rounded-lg bg-gray-900">
@@ -51,7 +51,7 @@ const MovieCard = ({ movie, onClick }) => {
 
         {/* Play button overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white p-3 sm:p-4 rounded-full shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-200 backdrop-blur-sm">
+          <button className="glass border border-blue-600 text-blue-600 p-3 sm:p-4 rounded-full shadow-lg transform scale-0 group-hover:scale-100 transition-transform duration-200 backdrop-blur-sm hover:bg-blue-600/10">
             <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
             </svg>

@@ -70,7 +70,7 @@ const MovieDetailsPage = ({ params }) => {
 
   if (isLoading || !movie) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen">
         {/* <Navigation /> */}
         <div className="flex items-center justify-center h-screen">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -96,7 +96,7 @@ const MovieDetailsPage = ({ params }) => {
   const releaseYear = movie.release_date ? movie.release_date.split('-')[0] : '';
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* <Navigation /> */}
       
       <main>
@@ -160,11 +160,11 @@ const MovieDetailsPage = ({ params }) => {
                   </button>
                   
                   <button 
-                    className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors ${
+                    className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors glass border ${
                       isInMyList 
-                        ? 'bg-red-600 hover:bg-red-700 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-700 text-white'
-                    }`}
+                        ? 'border-red-600 text-red-600' 
+                        : 'border-white text-white'
+                    } hover:bg-white/10`}
                     onClick={handleMyListToggle}
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

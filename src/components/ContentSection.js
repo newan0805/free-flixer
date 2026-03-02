@@ -81,7 +81,7 @@ const ContentSection = ({ title, category, type = 'movie', limit = 20 }) => {
       
       {content.length > limit && (
         <div className="mt-6 text-center">
-          <button className="text-blue-400 hover:text-blue-300 transition-colors">
+          <button className="glass text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded">
             View All {title}
           </button>
         </div>

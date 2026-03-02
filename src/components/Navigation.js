@@ -167,7 +167,7 @@ const Navigation = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 bg-black bg-opacity-95 backdrop-blur-sm z-50 border-b border-gray-800">
+      <nav className="fixed top-0 left-0 right-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo and Mobile Menu Button */}
@@ -224,7 +224,7 @@ const Navigation = () => {
                     onFocus={() =>
                       searchResults.length > 0 && setShowSuggestions(true)
                     }
-                    className="w-full bg-gray-800 text-white placeholder-gray-400 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-gray-700 transition-colors"
+                    className="w-full glass text-white placeholder-gray-400 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                   />
                   <button
                     type="submit"
@@ -248,7 +248,7 @@ const Navigation = () => {
 
                 {/* Search Suggestions Dropdown */}
                 {showSuggestions && searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 bg-black border border-gray-700 rounded-lg mt-2 shadow-xl z-50 max-h-80 overflow-y-auto custom-scrollbar">
+                  <div className="absolute top-full left-0 right-0 glass border border-gray-700 rounded-lg mt-2 shadow-xl z-50 max-h-80 overflow-y-auto custom-scrollbar">
                     <div className="p-3">
                       <p className="text-gray-400 text-sm font-medium mb-3">
                         Search Results
@@ -258,7 +258,7 @@ const Navigation = () => {
                           key={`${suggestion.id}-${suggestion.type}`}
                           type="button"
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className="w-full text-left px-2 py-3 hover:bg-gray-800 rounded-lg transition-colors group"
+                          className="w-full text-left px-2 py-3 hover:bg-white/10 rounded-lg transition-colors group"
                         >
                           <div className="flex items-start space-x-3">
                             {/* Thumbnail */}
@@ -409,7 +409,7 @@ const Navigation = () => {
                     router.push(item.href);
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition-colors flex items-center space-x-3"
+                  className="w-full text-left px-4 py-3 text-gray-300 hover:bg-white/10 hover:text-white transition-colors flex items-center space-x-3"
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="font-medium">{item.name}</span>
@@ -420,7 +420,7 @@ const Navigation = () => {
             {/* Footer */}
             <div className="p-4 border-t border-gray-800">
               <p className="text-gray-500 text-sm text-center">
-                © 2024 Free Flixer
+                © {new Date().getFullYear()} Free Flixer
               </p>
             </div>
           </div>

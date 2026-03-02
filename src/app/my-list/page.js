@@ -129,7 +129,7 @@ const MyListPage = () => {
       return (
         <div className={`grid gap-6 ${
           viewMode === 'grid' 
-            ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+            ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5' 
             : 'grid-cols-1'
         }`}>
           {[...Array(8)].map((_, index) => (
@@ -157,7 +157,7 @@ const MyListPage = () => {
     return (
       <div className={`grid gap-6 ${
         viewMode === 'grid' 
-          ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
           : 'grid-cols-1'
       }`}>
         {items.map((item) => (
@@ -169,12 +169,12 @@ const MyListPage = () => {
             />
             
             {/* Action buttons overlay */}
-            <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               {activeTab === 'my-list' && (
                 <>
                   <button
                     onClick={() => handleAddToWatched(item)}
-                    className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-colors"
+                    className="glass border border-green-600 text-green-600 p-2 rounded-full shadow-lg transition-colors hover:bg-green-600/10"
                     title="Mark as Watched"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,7 +183,7 @@ const MyListPage = () => {
                   </button>
                   <button
                     onClick={() => handleAddToToWatchLater(item)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition-colors"
+                    className="glass border border-blue-600 text-blue-600 p-2 rounded-full shadow-lg transition-colors hover:bg-blue-600/10"
                     title="Move to Watch Later"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +194,7 @@ const MyListPage = () => {
               )}
               <button
                 onClick={() => handleRemoveFromList(item.id, item.type, activeTab)}
-                className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-colors"
+                className="glass border border-red-600 text-red-600 p-2 rounded-full shadow-lg transition-colors hover:bg-red-600/10"
                 title={`Remove from ${activeTab.replace('-', ' ')}`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,10 +209,10 @@ const MyListPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* <Navigation /> */}
       
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 glass">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-6">My List</h1>
           
@@ -222,30 +222,30 @@ const MyListPage = () => {
             <div className="flex flex-wrap gap-4">
               <button
                 onClick={() => setActiveTab('my-list')}
-                className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                className={`px-6 py-3 rounded-full font-medium transition-colors glass border ${
                   activeTab === 'my-list'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-300 hover:border-gray-300 hover:text-white'
                 }`}
               >
                 My List ({myListItems.length})
               </button>
               <button
                 onClick={() => setActiveTab('watched')}
-                className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                className={`px-6 py-3 rounded-full font-medium transition-colors glass border ${
                   activeTab === 'watched'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    ? 'border-green-600 text-green-600'
+                    : 'border-transparent text-gray-300 hover:border-gray-300 hover:text-white'
                 }`}
               >
                 Watched ({watchedItems.length})
               </button>
               <button
                 onClick={() => setActiveTab('to-watch-later')}
-                className={`px-6 py-3 rounded-full font-medium transition-colors ${
+                className={`px-6 py-3 rounded-full font-medium transition-colors glass ${
                   activeTab === 'to-watch-later'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    ? 'bg-purple-600/80 text-white'
+                    : 'text-gray-300 hover:bg-gray-700/30'
                 }`}
               >
                 To Watch Later ({toWatchLaterItems.length})

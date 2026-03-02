@@ -49,10 +49,10 @@ const MoviesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* <Navigation /> */}
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 glass">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-6">Movies</h1>
 
@@ -68,10 +68,10 @@ const MoviesPage = () => {
                     setPage(1);
                     setMovies([]);
                   }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors glass border ${
                     category === cat.key
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-gray-300 hover:border-gray-300 hover:text-white"
                   }`}
                 >
                   {cat.label}
@@ -128,7 +128,7 @@ const MoviesPage = () => {
           <div className="mt-8 text-center">
             <button
               onClick={loadMore}
-              className="text-white px-6 py-3 rounded-md font-medium transition-colors"
+              className="glass border border-white text-white hover:bg-white/10 px-6 py-3 rounded-md font-medium transition-colors"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -120,7 +120,7 @@ const WatchPage = ({ params }) => {
 
   if (isLoading || !content) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen">
         {/* <Navigation /> */}
         <div className="flex items-center justify-center h-screen">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -136,29 +136,43 @@ const WatchPage = ({ params }) => {
       : `${content.first_air_date ? content.first_air_date.split("-")[0] : ""} • ${content.genres ? content.genres.map((g) => g.name).join(", ") : ""}`;
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* <Navigation /> */}
 
-      <main className="relative pt-16 md:pt-20">
+      <main className="relative pt-16 md:pt-20 glass">
         {/* Server Selection */}
         {availableServers.length > 1 && (
           <div className="max-w-6xl mx-auto px-4 mb-4">
-            <div className="bg-black bg-opacity-80 rounded-lg p-3">
+            <div className="glass rounded-lg p-3">
               <label className="block text-gray-300 text-xs mb-2">Server</label>
-              <div className="flex flex-wrap gap-2">
-                {availableServers.map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => handleServerChange(server.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      selectedServer === server.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    {server.name}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2 items-center">
+                <select
+                  value={selectedServer}
+                  onChange={(e) => handleServerChange(e.target.value)}
+                  className="glass text-white px-3 py-1 rounded-md text-xs font-medium focus:outline-none"
+                >
+                  {availableServers.map((server) => (
+                    <option key={server.id} value={server.id} className="bg-black">
+                      {server.name}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="flex flex-wrap gap-2">
+                  {availableServers.map((server) => (
+                    <button
+                      key={server.id}
+                      onClick={() => handleServerChange(server.id)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors glass border ${
+                        selectedServer === server.id
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-300 hover:border-gray-300 hover:text-white'
+                      } hover:bg-white/10`}
+                    >
+                      {server.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

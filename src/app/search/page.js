@@ -49,10 +49,10 @@ const SearchPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen">
       {/* <Navigation /> */}
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 glass">
         {/* Search Bar */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-6">Search</h1>
@@ -80,12 +80,12 @@ const SearchPage = () => {
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Search for movies, TV shows, and people..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-600 rounded-md leading-5 bg-black/50 text-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-3 rounded-md leading-5 glass text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <button
               onClick={() => handleSearch()}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+              className="glass border border-blue-600 text-blue-600 hover:bg-blue-600/10 px-6 py-3 rounded-md font-medium transition-colors"
             >
               Search
             </button>
@@ -162,7 +162,7 @@ const SearchPage = () => {
                       setQuery(genre);
                       handleSearch(genre);
                     }}
-                    className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-full transition-colors"
+                    className="glass border border-gray-400 text-gray-400 hover:border-white hover:text-white px-4 py-2 rounded-full transition-colors"
                   >
                     {genre}
                   </button>
