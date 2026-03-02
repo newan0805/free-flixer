@@ -95,6 +95,26 @@ export const tmdbService = {
     }
   },
 
+  // Get Animes
+  getAnimes: async (page = 1) => {
+    try {
+      // Use TV discover endpoint with anime-specific filters
+      const endpoint = "/discover/tv";
+      const params = {
+        page,
+        with_genres: "16", // Animation genre
+        with_origin_country: "JP", // Japanese origin
+        sort_by: "popularity.desc"
+      };
+      
+      const response = await fetch(buildUrl(endpoint, params));
+      return await handleResponse(response);
+    } catch (error) {
+      console.error("Error fetching animes:", error);
+      return { results: [] };
+    }
+  },
+
   // Search content
   search: async (query, page = 1) => {
     try {
