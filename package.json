@@ -1,13 +1,32 @@
 {
   "name": "free-flixer",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Your ultimate streaming destination with premium content",
+  "main": "src/app/layout.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
+  "keywords": [
+    "streaming",
+    "movies",
+    "tv-shows",
+    "entertainment",
+    "video-player",
+    "watchlist"
+  ],
+  "author": "ChainIT™",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/free-flixer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/free-flixer/issues"
+  },
+  "homepage": "https://github.com/your-username/free-flixer#readme",
   "dependencies": {
     "next": "^16.1.6",
     "postcss": "^8.5.6",
@@ -24,9 +43,5 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4.2.0",
     "typescript": "^5"
-  },
-  "main": "index.js",
-  "repository": "https://github.com/newan0805/free-flixer.git",
-  "author": "newan0805 <newan0805@gmail.com>",
-  "license": "MIT"
+  }
 }

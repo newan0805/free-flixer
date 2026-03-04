@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 
 const ViewModeToggle = ({ currentView, onViewChange }) => {
-  const [isHovered, setIsHovered] = useState(false);
+  
 
   return (
     <div className="flex items-center space-x-3">
@@ -12,8 +11,7 @@ const ViewModeToggle = ({ currentView, onViewChange }) => {
         {/* Grid View Button */}
         <button
           onClick={() => onViewChange('grid')}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          
           className={`relative p-2 rounded-md transition-all duration-200 ${
             currentView === 'grid'
               ? 'border border-blue-600 text-blue-600 shadow-lg shadow-blue-500/25'
@@ -35,8 +33,7 @@ const ViewModeToggle = ({ currentView, onViewChange }) => {
         {/* Collection View Button */}
         <button
           onClick={() => onViewChange('collection')}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          
           className={`relative p-2 rounded-md transition-all duration-200 ${
             currentView === 'collection'
               ? 'border border-purple-600 text-purple-600 shadow-lg shadow-purple-500/25'

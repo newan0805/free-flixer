@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { tmdbService } from '@controllers/tmdb';
 import VideoPlayer from '@components/VideoPlayer';
@@ -113,11 +114,9 @@ const Hero = () => {
       {/* Background Image */}
       {backdropUrl ? (
         <div className="absolute inset-0 z-0">
-          <img
-            src={backdropUrl}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
+          <div className="relative w-full h-full">
+            <Image src={backdropUrl} alt={title} fill className="object-cover" priority />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-transparent"></div>
         </div>
       ) : (

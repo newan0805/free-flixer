@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { tmdbService } from "@controllers/tmdb";
 import MovieCard from "@components/MovieCard";
-import Navigation from "@components/Navigation";
 import ViewModeToggle from "@components/ViewModeToggle";
 
 const MoviesPage = () => {
@@ -20,11 +19,7 @@ const MoviesPage = () => {
     { key: "now_playing", label: "Now Playing" },
   ];
 
-  useEffect(() => {
-    fetchMovies();
-  }, [category, page]);
-
-  const fetchMovies = async () => {
+  const fetchMovies = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await tmdbService.getMovies(category, page);
@@ -38,7 +33,11 @@ const MoviesPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [category, page]);
+
+  useEffect(() => {
+    fetchMovies();
+  }, [fetchMovies]);
 
   const handleCardClick = (movie) => {
     window.location.href = `/movie/${movie.id}`;

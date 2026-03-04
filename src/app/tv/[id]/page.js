@@ -1,6 +1,7 @@
 'use client';
+import Image from 'next/image';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { tmdbService } from '@controllers/tmdb';
 import { myList } from '@utils/myList';
 import VideoPlayer from '@components/VideoPlayer';
@@ -18,25 +19,7 @@ const TVDetailsPage = ({ params }) => {
   const [isInMyList, setIsInMyList] = useState(false);
   const [watchProgress, setWatchProgress] = useState(null);
 
-  useEffect(() => {
-    fetchTVShowDetails();
-  }, [unwrappedParams.id]);
-
-  useEffect(() => {
-    if (tvShow) {
-      setIsInMyList(myList.isInList(tvShow.id, 'tv'));
-      
-      // Load watch progress for this TV show
-      const progress = myList.getWatchProgress(tvShow.id);
-      if (progress) {
-        setWatchProgress(progress);
-        setSelectedSeason(progress.season);
-        setSelectedEpisode(progress.episode);
-      }
-    }
-  }, [tvShow]);
-
-  const fetchTVShowDetails = async () => {
+  const fetchTVShowDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const [tvData, creditsData, recommendationsData] = await Promise.all([
@@ -61,7 +44,52 @@ const TVDetailsPage = ({ params }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [unwrappedParams.id]);
+
+  useEffect(() => {
+    fetchTVShowDetails();
+  }, [fetchTVShowDetails]);
+
+  useEffect(() => {
+    if (tvShow) {
+      setIsInMyList(myList.isInList(tvShow.id, 'tv'));
+      
+      // Load watch progress for this TV show
+      const progress = myList.getWatchProgress(tvShow.id);
+      if (progress) {
+        setWatchProgress(progress);
+        setSelectedSeason(progress.season);
+        setSelectedEpisode(progress.episode);
+      }
+    }
+  }, [tvShow]);
+
+  // const fetchTVShowDetails = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     const [tvData, creditsData, recommendationsData] = await Promise.all([
+  //       tmdbService.getTVDetails(unwrappedParams.id),
+  //       tmdbService.getCredits(unwrappedParams.id, 'tv'),
+  //       tmdbService.getRecommendations(unwrappedParams.id, 'tv')
+  //     ]);
+
+  //     setTVShow(tvData);
+  //     setCredits(creditsData);
+  //     setRecommendations(recommendationsData.results || []);
+      
+  //     // Set default episode for season 1
+  //     if (tvData.seasons && tvData.seasons.length > 0) {
+  //       const season1 = tvData.seasons.find(s => s.season_number === 1);
+  //       if (season1 && season1.episode_count > 0) {
+  //         setSelectedEpisode(1);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching TV show details:', error);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleSeasonChange = (seasonNumber) => {
     setSelectedSeason(seasonNumber);
@@ -143,11 +171,9 @@ const TVDetailsPage = ({ params }) => {
         <section className="relative min-h-[60vh]">
           {backdropUrl && (
             <div className="absolute inset-0 z-0">
-              <img
-                src={backdropUrl}
-                alt={tvShow.name}
-                className="w-full h-full object-cover"
-              />
+              <div className="relative w-full h-full">
+                <Image src={backdropUrl} alt={tvShow.name} fill className="object-cover" priority />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
             </div>
           )}
@@ -157,11 +183,9 @@ const TVDetailsPage = ({ params }) => {
               {/* Poster */}
               <div className="lg:w-1/3 flex-shrink-0">
                 {posterUrl && (
-                  <img
-                    src={posterUrl}
-                    alt={tvShow.name}
-                    className="w-full rounded-lg shadow-2xl"
-                  />
+                  <div className="relative w-full h-[28rem]">
+                    <Image src={posterUrl} alt={tvShow.name} fill className="object-cover rounded-lg shadow-2xl" priority />
+                  </div>
                 )}
               </div>
 
@@ -296,11 +320,14 @@ const TVDetailsPage = ({ params }) => {
                 {topCast.map((actor) => (
                   <div key={actor.id} className="text-center group">
                     {actor.profile_path ? (
-                      <img
-                        src={tmdbService.getProfileUrl(actor.profile_path)}
-                        alt={actor.name}
-                        className="w-full h-40 object-cover rounded-lg mb-2 group-hover:opacity-80 transition-opacity"
-                      />
+                      <div className="relative w-full h-40 mb-2">
+                        <Image
+                          src={tmdbService.getProfileUrl(actor.profile_path)}
+                          alt={actor.name}
+                          fill
+                          className="object-cover rounded-lg group-hover:opacity-80 transition-opacity"
+                        />
+                      </div>
                     ) : (
                       <div className="w-full h-40 bg-gray-800 rounded-lg mb-2 flex items-center justify-center">
                         <svg className="w-12 h-12 text-gray-600" fill="currentColor" viewBox="0 0 20 20">

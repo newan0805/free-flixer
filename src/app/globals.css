@@ -1,20 +1,23 @@
 @import "tailwindcss";
 
-/* @tailwind base;
-@tailwind components;
-@tailwind utilities; */
-
 @layer base {
   html {
     font-family:
       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
       sans-serif;
-    /* ensure the gradient/background fills the entire viewport including
-       the iOS safe area (notch) so the status bar doesn't show white */
+    /* gradient background fills entire viewport including safe area */
     background: linear-gradient(to bottom, #000000, #000428, #000000);
-    /* allow content to be inset by the safe-area env variables */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    background-attachment: fixed;
+    height: 100%;
+  }
+
+  body {
+    height: 100%;
+    background: linear-gradient(to bottom, #000000, #000428, #000000);
+    background-attachment: fixed;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+      sans-serif;
   }
 }
 
@@ -60,12 +63,6 @@
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
-
-/* make sure the body itself doesn't introduce a white gap at the top
-   when the app is launched from the home screen on iOS */
-body {
-  background-color: transparent; /* gradient lives on html */
-}
 
   .nav-link {
     @apply text-gray-300 hover:text-white transition-colors duration-200;

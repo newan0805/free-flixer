@@ -1,42 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { getAvailableServers, getSavedServer, saveServer, getEmbedUrl } from '@utils/servers';
 
 const VideoPlayer = ({ title, onClose, type = 'movie', tmdbId, season = 1, episode = 1 }) => {
-  const [selectedServer, setSelectedServer] = useState('');
-  const [availableServers, setAvailableServers] = useState([]);
-  const [currentUrl, setCurrentUrl] = useState('');
+  // Initialize available servers and selected server lazily to avoid
+  // calling setState synchronously inside an effect.
+  const initialServers = getAvailableServers();
+  const initialSaved = getSavedServer() || (initialServers[0]?.id ?? '');
 
-  useEffect(() => {
-    // Initialize servers and selected server
-    const servers = getAvailableServers();
-    const savedServer = getSavedServer();
-    
-    setAvailableServers(servers);
-    setSelectedServer(savedServer);
-    
-    // Generate initial URL
-    const url = getEmbedUrl(savedServer, {
+  const [selectedServer, setSelectedServer] = useState(() => initialSaved);
+  const [availableServers] = useState(() => initialServers);
+  const currentUrl = useMemo(() =>
+    getEmbedUrl(selectedServer, {
       contentType: type,
       tmdbId,
       season,
-      episode
-    });
-    setCurrentUrl(url);
-  }, [type, tmdbId, season, episode]);
+      episode,
+    }),
+    [selectedServer, type, tmdbId, season, episode],
+  );
 
   const handleServerChange = (serverId) => {
     setSelectedServer(serverId);
     saveServer(serverId);
-    
-    const url = getEmbedUrl(serverId, {
-      contentType: type,
-      tmdbId,
-      season,
-      episode
-    });
-    setCurrentUrl(url);
+    // currentUrl is memoized from `selectedServer`, updating selectedServer
+    // will recompute the URL via the `useMemo` above.
   };
 
   return (

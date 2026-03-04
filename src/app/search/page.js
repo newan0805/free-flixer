@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { tmdbService } from "@controllers/tmdb";
-import { myList } from "@utils/myList";
 import MovieCard from "@components/MovieCard";
-import Navigation from "@components/Navigation";
 
 const SearchPage = () => {
   const [query, setQuery] = useState("");
@@ -17,7 +15,19 @@ const SearchPage = () => {
     const searchQuery = urlParams.get("q");
     if (searchQuery) {
       setQuery(searchQuery);
-      handleSearch(searchQuery);
+      (async () => {
+        setIsLoading(true);
+        setHasSearched(true);
+        try {
+          const response = await tmdbService.search(searchQuery);
+          setResults(response.results || []);
+        } catch (err) {
+          console.error('Error searching:', err);
+          setResults([]);
+        } finally {
+          setIsLoading(false);
+        }
+      })();
     }
   }, []);
 
@@ -114,7 +124,7 @@ const SearchPage = () => {
               <>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-white">
-                    Results for "{query}"
+                    Results for “{query}”
                   </h2>
                   <p className="text-gray-400">
                     {results.length} results found

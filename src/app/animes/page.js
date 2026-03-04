@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { tmdbService } from "@controllers/tmdb";
 import { myList } from "@utils/myList";
 import MovieCard from "@components/MovieCard";
@@ -14,11 +14,7 @@ const AnimesPage = () => {
   const [viewMode, setViewMode] = useState("grid");
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    fetchAnimes();
-  }, [page]);
-
-  const fetchAnimes = async () => {
+  const fetchAnimes = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -47,7 +43,11 @@ const AnimesPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page]);
+
+  useEffect(() => {
+    fetchAnimes();
+  }, [fetchAnimes]);
 
   const loadMore = () => {
     setPage((prev) => prev + 1);
@@ -172,7 +172,7 @@ const AnimesPage = () => {
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg mb-4">No Anime Found</div>
             <p className="text-gray-400">
-              We're working on curating more anime content for you.
+              We are working on curating more anime content for you.
             </p>
             <button
               onClick={fetchAnimes}

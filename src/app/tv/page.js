@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { tmdbService } from "@controllers/tmdb";
 import MovieCard from "@components/MovieCard";
 import ViewModeToggle from "@components/ViewModeToggle";
@@ -19,11 +19,7 @@ const TVPage = () => {
     { key: "airing_today", label: "Airing Today" },
   ];
 
-  useEffect(() => {
-    fetchTVShows();
-  }, [category, page]);
-
-  const fetchTVShows = async () => {
+  const fetchTVShows = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await tmdbService.getTVShows(category, page);
@@ -37,7 +33,11 @@ const TVPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [category, page]);
+
+  useEffect(() => {
+    fetchTVShows();
+  }, [fetchTVShows]);
 
   const handleCardClick = (tvShow) => {
     window.location.href = `/tv/${tvShow.id}`;

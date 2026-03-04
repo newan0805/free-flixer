@@ -1,15 +1,30 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Free Flixer",
-  description: "A Netflix-like streaming platform using TMDB API",
+  title: "Free-Flixer",
+  description: "Your ultimate streaming destination with premium content",
   manifest: "/manifest.json",
   themeColor: "#000000",
-  icons: [
-    { rel: "icon", url: "/favicon.ico" },
-    { rel: "apple-touch-icon", url: "/icon-192x192.png" },
-    { rel: "mask-icon", url: "/icon-512x512.png", color: "#000000" },
-  ],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+  },
+  keywords: ["streaming", "movies", "tv shows", "entertainment"],
+  authors: [{ name: "ChainIT™" }],
+  creator: "ChainIT™",
+  publisher: "ChainIT™",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: "#000000",
 };
 
 import Navigation from "@components/Navigation";
@@ -22,16 +37,13 @@ export default function RootLayout({ children }) {
           name="viewport"
           content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#000000" />
-        <meta
-          name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
-        />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+
+        <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      {/* gradient is now applied to html via globals.css so body can be transparent */}
-      <body className="text-white">
+      {/* gradient is now applied to html and body via globals.css */}
+      {/* <body className="text-white bg-gradient-to-b from-black via-blue-900 to-black"> */}
+      <body className="text-white bg-black">
         {/* Common Navigation for all pages */}
         <Navigation />
 

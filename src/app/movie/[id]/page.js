@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
+import Image from 'next/image';
 import { tmdbService } from '@controllers/tmdb';
 import { myList } from '@utils/myList';
 import VideoPlayer from '@components/VideoPlayer';
@@ -15,17 +16,7 @@ const MovieDetailsPage = ({ params }) => {
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
   const [isInMyList, setIsInMyList] = useState(false);
 
-  useEffect(() => {
-    fetchMovieDetails();
-  }, [unwrappedParams.id]);
-
-  useEffect(() => {
-    if (movie) {
-      setIsInMyList(myList.isInList(movie.id, 'movie'));
-    }
-  }, [movie]);
-
-  const fetchMovieDetails = async () => {
+  const fetchMovieDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const [movieData, creditsData, recommendationsData] = await Promise.all([
@@ -42,7 +33,17 @@ const MovieDetailsPage = ({ params }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [unwrappedParams.id]);
+
+  useEffect(() => {
+    fetchMovieDetails();
+  }, [fetchMovieDetails]);
+
+  useEffect(() => {
+    if (movie) {
+      setIsInMyList(myList.isInList(movie.id, 'movie'));
+    }
+  }, [movie]);
 
   const handleMyListToggle = () => {
     if (!movie) return;
@@ -104,11 +105,9 @@ const MovieDetailsPage = ({ params }) => {
         <section className="relative min-h-[60vh]">
           {backdropUrl && (
             <div className="absolute inset-0 z-0">
-              <img
-                src={backdropUrl}
-                alt={movie.title}
-                className="w-full h-full object-cover"
-              />
+              <div className="relative w-full h-full">
+                <Image src={backdropUrl} alt={movie.title} fill className="object-cover" priority />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent"></div>
             </div>
           )}
@@ -118,11 +117,9 @@ const MovieDetailsPage = ({ params }) => {
               {/* Poster */}
               <div className="lg:w-1/3 flex-shrink-0">
                 {posterUrl && (
-                  <img
-                    src={posterUrl}
-                    alt={movie.title}
-                    className="w-full rounded-lg shadow-2xl"
-                  />
+                  <div className="relative w-full h-[28rem]">
+                    <Image src={posterUrl} alt={movie.title} fill className="object-cover rounded-lg shadow-2xl" priority />
+                  </div>
                 )}
               </div>
 
@@ -192,12 +189,10 @@ const MovieDetailsPage = ({ params }) => {
                 {topCast.map((actor) => (
                   <div key={actor.id} className="text-center group">
                     {actor.profile_path ? (
-                      <img
-                        src={tmdbService.getProfileUrl(actor.profile_path)}
-                        alt={actor.name}
-                        className="w-full h-40 object-cover rounded-lg mb-2 group-hover:opacity-80 transition-opacity"
-                      />
-                    ) : (
+                          <div className="relative w-full h-40 mb-2">
+                            <Image src={tmdbService.getProfileUrl(actor.profile_path)} alt={actor.name} fill className="object-cover rounded-lg group-hover:opacity-80 transition-opacity" />
+                          </div>
+                        ) : (
                       <div className="w-full h-40 bg-gray-800 rounded-lg mb-2 flex items-center justify-center">
                         <svg className="w-12 h-12 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />

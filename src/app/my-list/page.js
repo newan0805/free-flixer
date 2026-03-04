@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { tmdbService } from '@controllers/tmdb';
 import { myList } from '@utils/myList';
 import MovieCard from '@components/MovieCard';
-import Navigation from '@components/Navigation';
 import ViewModeToggle from '@components/ViewModeToggle';
 
 const MyListPage = () => {

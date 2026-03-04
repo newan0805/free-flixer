@@ -1,4 +1,3 @@
-import Navigation from "@components/Navigation";
 import Hero from "@components/Hero";
 import ContentSection from "@components/ContentSection";
 

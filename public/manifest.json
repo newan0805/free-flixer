@@ -1,10 +1,9 @@
 {
   "name": "Free-Flixer",
   "short_name": "Flixer",
-  "description": "A Netflix-like streaming platform using TMDB API",
+  "description": "Your ultimate streaming destination with premium content",
   "start_url": "/",
   "categories": ["entertainment"],
-  "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "any",

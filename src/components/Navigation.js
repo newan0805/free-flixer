@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from 'next/image';
 import { useRouter } from "next/navigation";
 
 const Navigation = () => {
@@ -11,11 +12,21 @@ const Navigation = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Debounced search
+  // Debounced search (inline to avoid stale callback warnings)
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       if (searchQuery.length >= 2) {
-        performSearch();
+        try {
+          setIsSearching(true);
+          const response = await fetch(`/api/search-suggestions?q=${encodeURIComponent(searchQuery)}`);
+          const data = await response.json();
+          setSearchResults(data.suggestions || []);
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error('Search error:', error);
+        } finally {
+          setIsSearching(false);
+        }
       } else {
         setSearchResults([]);
         setShowSuggestions(false);
@@ -24,24 +35,6 @@ const Navigation = () => {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  const performSearch = async () => {
-    if (searchQuery.length < 2) return;
-
-    try {
-      setIsSearching(true);
-      const response = await fetch(
-        `/api/search-suggestions?q=${encodeURIComponent(searchQuery)}`,
-      );
-      const data = await response.json();
-      setSearchResults(data.suggestions || []);
-      setShowSuggestions(true);
-    } catch (error) {
-      console.error("Search error:", error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -263,11 +256,9 @@ const Navigation = () => {
                           <div className="flex items-start space-x-3">
                             {/* Thumbnail */}
                             {suggestion.poster && (
-                              <img
-                                src={suggestion.poster}
-                                alt={suggestion.title}
-                                className="w-12 h-16 object-cover rounded-md flex-shrink-0 group-hover:scale-105 transition-transform"
-                              />
+                              <div className="w-12 h-16 relative flex-shrink-0">
+                                <Image src={suggestion.poster} alt={suggestion.title} fill className="object-cover rounded-md group-hover:scale-105 transition-transform" />
+                              </div>
                             )}
 
                             {/* Details */}
