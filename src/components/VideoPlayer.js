@@ -179,7 +179,8 @@ const VideoPlayer = ({
             src={currentUrl}
             className="w-full h-full"
             // allow="autoplay; encrypted-media; picture-in-picture"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+            // sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-presentation"
+            // referrerPolicy="no-referrer-when-downgrade"
             allowFullScreen
             allow="autoplay; encrypted-media; picture-in-picture"
             title={`${title} Video Player`}
