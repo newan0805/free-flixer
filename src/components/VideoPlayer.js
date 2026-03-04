@@ -157,13 +157,15 @@ const VideoPlayer = ({
                   </select>
                 </div>
 
-                <button
-                  onClick={handleNextEpisode}
-                  className="glass backdrop-blur-sm bg-blue-600/30 px-4 py-2 rounded-md text-sm font-medium text-white border border-blue-400 hover:bg-blue-600/50 transition"
-                >
-                  {" "}
-                  Next →{" "}
-                </button>
+                <div className="flex flex-col justify-end">
+                  <button
+                    onClick={handleNextEpisode}
+                    className="glass backdrop-blur-sm bg-blue-600/30 px-4 py-2 rounded-md text-sm font-medium text-white border border-blue-400 hover:bg-blue-600/50 transition"
+                  >
+                    {" "}
+                    Next →{" "}
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -176,9 +178,11 @@ const VideoPlayer = ({
           <iframe
             src={currentUrl}
             className="w-full h-full"
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
-            allow="autoplay; encrypted-media; picture-in-picture"
+            // allow="autoplay; encrypted-media; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
             allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture"
+            title={`${title} Video Player`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
