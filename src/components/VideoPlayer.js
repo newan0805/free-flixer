@@ -176,8 +176,9 @@ const VideoPlayer = ({
           <iframe
             src={currentUrl}
             className="w-full h-full"
-            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
             allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
