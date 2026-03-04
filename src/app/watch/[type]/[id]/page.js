@@ -24,7 +24,6 @@ const WatchPage = ({ params }) => {
   // Get URL parameters for season and episode
   const [urlParams, setUrlParams] = useState({ season: 1, episode: 1 });
   const [nextEpisode, setNextEpisode] = useState(null);
-  const [showEpisodeEnd, setShowEpisodeEnd] = useState(false);
   const [isInWatchLater, setIsInWatchLater] = useState(false);
 
   const fetchContentDetails = useCallback(async () => {

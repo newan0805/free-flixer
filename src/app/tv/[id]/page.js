@@ -389,6 +389,7 @@ const TVDetailsPage = ({ params }) => {
           tmdbId={tvShow.id}
           season={selectedSeason}
           episode={selectedEpisode}
+          seasons={tvShow.seasons || []}
         />
       )}
     </div>

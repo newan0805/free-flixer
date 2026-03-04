@@ -45,7 +45,7 @@ export default function RootLayout({ children }) {
       {/* <body className="text-white bg-gradient-to-b from-black via-blue-900 to-black"> */}
       <body className="text-white bg-black">
         {/* Common Navigation for all pages */}
-        <Navigation />
+        <Navigation className="fixed top-0 left-0 right-0 z-50" />
 
         {/* Main content area with proper padding to account for fixed navigation */}
         <main className="min-h-screen pt-16">{children}</main>

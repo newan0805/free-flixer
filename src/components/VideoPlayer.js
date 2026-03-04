@@ -1,24 +1,43 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { getAvailableServers, getSavedServer, saveServer, getEmbedUrl } from '@utils/servers';
+import { useState, useMemo } from "react";
+import {
+  getAvailableServers,
+  getSavedServer,
+  saveServer,
+  getEmbedUrl,
+} from "@utils/servers";
 
-const VideoPlayer = ({ title, onClose, type = 'movie', tmdbId, season = 1, episode = 1 }) => {
+const VideoPlayer = ({
+  title,
+  onClose,
+  type = "movie",
+  tmdbId,
+  season = 1,
+  episode = 1,
+  seasons = [], // array of {season_number, episode_count}
+}) => {
   // Initialize available servers and selected server lazily to avoid
   // calling setState synchronously inside an effect.
   const initialServers = getAvailableServers();
-  const initialSaved = getSavedServer() || (initialServers[0]?.id ?? '');
+  const initialSaved = getSavedServer() || (initialServers[0]?.id ?? "");
 
   const [selectedServer, setSelectedServer] = useState(() => initialSaved);
   const [availableServers] = useState(() => initialServers);
-  const currentUrl = useMemo(() =>
-    getEmbedUrl(selectedServer, {
-      contentType: type,
-      tmdbId,
-      season,
-      episode,
-    }),
-    [selectedServer, type, tmdbId, season, episode],
+
+  // TV-specific season/episode selectors
+  const [tvSeason, setTvSeason] = useState(season);
+  const [tvEpisode, setTvEpisode] = useState(episode);
+
+  const currentUrl = useMemo(
+    () =>
+      getEmbedUrl(selectedServer, {
+        contentType: type,
+        tmdbId,
+        season: type === "tv" ? tvSeason : season,
+        episode: type === "tv" ? tvEpisode : episode,
+      }),
+    [selectedServer, type, tmdbId, season, episode, tvSeason, tvEpisode],
   );
 
   const handleServerChange = (serverId) => {
@@ -28,78 +47,141 @@ const VideoPlayer = ({ title, onClose, type = 'movie', tmdbId, season = 1, episo
     // will recompute the URL via the `useMemo` above.
   };
 
+  const handleSeasonChange = (val) => {
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num > 0) {
+      setTvSeason(num);
+      setTvEpisode(1); // reset episode when season changes
+    }
+  };
+
+  const handleEpisodeChange = (val) => {
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num > 0) {
+      setTvEpisode(num);
+    }
+  };
+
+  const handleNextEpisode = () => {
+    setTvEpisode((prev) => prev + 1);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center p-4">
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20 bg-black bg-opacity-50 p-2 rounded-full hover:bg-opacity-75"
+        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20 bg-black/50 p-2 rounded-full"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        ✕
       </button>
 
-      {/* Video Title */}
-      <div className="absolute top-4 left-4 right-4 text-center z-10">
+      {/* Title */}
+      <div className="text-center mb-6">
         <h2 className="text-white text-xl sm:text-2xl font-bold">{title}</h2>
-        <p className="text-gray-300 text-sm">{type === 'movie' ? 'Movie' : `TV Show • Season ${season} Episode ${episode}`}</p>
+        <p className="text-gray-400 text-sm">
+          {type === "movie"
+            ? "Movie"
+            : `TV Show • Season ${tvSeason} Episode ${tvEpisode}`}
+        </p>
       </div>
 
-      {/* Server Selection */}
-      {availableServers.length > 1 && (
-        <div className="absolute top-20 left-4 right-4 z-10">
-          <div className="glass rounded-lg p-3">
-            <label className="block text-gray-300 text-xs mb-2">Server</label>
-            <div className="flex flex-wrap gap-2 items-center">
-              <select
-                value={selectedServer}
-                onChange={(e) => handleServerChange(e.target.value)}
-                className="glass text-white px-3 py-1 rounded-md text-xs font-medium focus:outline-none"
-              >
-                {availableServers.map((server) => (
-                  <option key={server.id} value={server.id} className="bg-black">
-                    {server.name}
-                  </option>
-                ))}
-              </select>
-
-              <div className="flex flex-wrap gap-2">
-                {availableServers.map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => handleServerChange(server.id)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors glass border ${
-                      selectedServer === server.id
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-300 hover:border-gray-300 hover:text-white'
-                    } hover:bg-white/10`}
-                  >
-                    {server.name}
-                  </button>
-                ))}
+      {/* Controls */}
+      {(availableServers.length > 1 ||
+        (type === "tv" && seasons.length > 0)) && (
+        <div className="mb-6 glass backdrop-blur-md bg-white/10 rounded-xl px-6 py-4 w-full max-w-4xl">
+          <div className="flex flex-wrap items-end justify-center gap-6">
+            {availableServers.length > 1 && (
+              <div className="flex flex-col min-w-[140px]">
+                <label className="text-gray-400 text-xs mb-2 tracking-wide">
+                  Server
+                </label>
+                <select
+                  value={selectedServer}
+                  onChange={(e) => handleServerChange(e.target.value)}
+                  className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm focus:outline-none"
+                >
+                  {availableServers.map((server) => (
+                    <option
+                      key={server.id}
+                      value={server.id}
+                      className="bg-black"
+                    >
+                      {server.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </div>
+            )}
+
+            {type === "tv" && seasons.length > 0 && (
+              <>
+                <div className="flex flex-col min-w-[100px]">
+                  <label className="text-gray-400 text-xs mb-2 tracking-wide">
+                    Season
+                  </label>
+                  <select
+                    value={tvSeason}
+                    onChange={(e) => handleSeasonChange(e.target.value)}
+                    className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm"
+                  >
+                    {seasons.map((s) => (
+                      <option key={s.season_number} value={s.season_number}>
+                        {s.season_number}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col min-w-[100px]">
+                  <label className="text-gray-400 text-xs mb-2 tracking-wide">
+                    Episode
+                  </label>
+                  <select
+                    value={tvEpisode}
+                    onChange={(e) => handleEpisodeChange(e.target.value)}
+                    className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm"
+                  >
+                    {Array.from(
+                      {
+                        length:
+                          seasons.find((s) => s.season_number === tvSeason)
+                            ?.episode_count || 1,
+                      },
+                      (_, i) => i + 1,
+                    ).map((num) => (
+                      <option key={num} value={num}>
+                        {num}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleNextEpisode}
+                  className="glass backdrop-blur-sm bg-blue-600/30 px-4 py-2 rounded-md text-sm font-medium text-white border border-blue-400 hover:bg-blue-600/50 transition"
+                >
+                  {" "}
+                  Next →{" "}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* Video Container - Responsive iframe */}
-      <div className="relative w-full max-w-4xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+      {/* Video */}
+      <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
         {currentUrl ? (
           <iframe
             src={currentUrl}
-            className="w-full h-full border-0"
+            className="w-full h-full"
             allowFullScreen
             allow="autoplay; encrypted-media; picture-in-picture"
-            title={`${title} Video Player`}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-900">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-400 text-sm mt-2">Loading video...</p>
-            </div>
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         )}
       </div>

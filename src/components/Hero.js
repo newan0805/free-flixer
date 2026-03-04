@@ -192,11 +192,13 @@ const Hero = () => {
       {/* Video Player Modal */}
       {isVideoPlayerOpen && featuredMovie && (
         <VideoPlayer
-          title={title}
-          onClose={() => setIsVideoPlayerOpen(false)}
-          type={featuredMovie.media_type === 'movie' ? 'movie' : 'tv'}
-          tmdbId={featuredMovie.id}
-        />
+            title={title}
+            onClose={() => setIsVideoPlayerOpen(false)}
+            type={featuredMovie.media_type === 'movie' ? 'movie' : 'tv'}
+            tmdbId={featuredMovie.id}
+            // pass seasons array when available (tv shows)
+            seasons={featuredMovie.seasons || []}
+          />
       )}
     </section>
   );
