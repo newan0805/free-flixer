@@ -67,129 +67,131 @@ const VideoPlayer = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center p-4">
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20 bg-black/50 p-2 rounded-full"
-      >
-        ✕
-      </button>
+    <div className="fixed inset-0 bg-black z-[9999] overflow-y-auto">
+      <div className="min-h-full flex flex-col items-center px-4 py-8">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20 bg-black/50 p-2 rounded-full"
+        >
+          ✕
+        </button>
 
-      {/* Title */}
-      <div className="text-center mb-6">
-        <h2 className="text-white text-xl sm:text-2xl font-bold">{title}</h2>
-        <p className="text-gray-400 text-sm">
-          {type === "movie"
-            ? "Movie"
-            : `TV Show • Season ${tvSeason} Episode ${tvEpisode}`}
-        </p>
-      </div>
-
-      {/* Controls */}
-      {(availableServers.length > 1 ||
-        (type === "tv" && seasons.length > 0)) && (
-        <div className="mb-6 glass backdrop-blur-md bg-white/10 rounded-xl px-6 py-4 w-full max-w-4xl">
-          <div className="flex flex-wrap items-end justify-center gap-6">
-            {availableServers.length > 1 && (
-              <div className="flex flex-col min-w-[140px]">
-                <label className="text-gray-400 text-xs mb-2 tracking-wide">
-                  Server
-                </label>
-                <select
-                  value={selectedServer}
-                  onChange={(e) => handleServerChange(e.target.value)}
-                  className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm focus:outline-none"
-                >
-                  {availableServers.map((server) => (
-                    <option
-                      key={server.id}
-                      value={server.id}
-                      className="bg-black"
-                    >
-                      {server.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {type === "tv" && seasons.length > 0 && (
-              <>
-                <div className="flex flex-col min-w-[100px]">
-                  <label className="text-gray-400 text-xs mb-2 tracking-wide">
-                    Season
-                  </label>
-                  <select
-                    value={tvSeason}
-                    onChange={(e) => handleSeasonChange(e.target.value)}
-                    className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm"
-                  >
-                    {seasons.map((s) => (
-                      <option key={s.season_number} value={s.season_number}>
-                        {s.season_number}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col min-w-[100px]">
-                  <label className="text-gray-400 text-xs mb-2 tracking-wide">
-                    Episode
-                  </label>
-                  <select
-                    value={tvEpisode}
-                    onChange={(e) => handleEpisodeChange(e.target.value)}
-                    className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm"
-                  >
-                    {Array.from(
-                      {
-                        length:
-                          seasons.find((s) => s.season_number === tvSeason)
-                            ?.episode_count || 1,
-                      },
-                      (_, i) => i + 1,
-                    ).map((num) => (
-                      <option key={num} value={num}>
-                        {num}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex flex-col justify-end">
-                  <button
-                    onClick={handleNextEpisode}
-                    className="glass backdrop-blur-sm bg-blue-600/30 px-4 py-2 rounded-md text-sm font-medium text-white border border-blue-400 hover:bg-blue-600/50 transition"
-                  >
-                    {" "}
-                    Next →{" "}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+        {/* Title */}
+        <div className="text-center mb-6">
+          <h2 className="text-white text-xl sm:text-2xl font-bold">{title}</h2>
+          <p className="text-gray-400 text-sm">
+            {type === "movie"
+              ? "Movie"
+              : `TV Show • Season ${tvSeason} Episode ${tvEpisode}`}
+          </p>
         </div>
-      )}
 
-      {/* Video */}
-      <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-        {currentUrl ? (
-          <iframe
-            src={currentUrl}
-            className="w-full h-full"
-            // allow="autoplay; encrypted-media; picture-in-picture"
-            // sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-presentation"
-            // referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-            allow="autoplay; encrypted-media; picture-in-picture"
-            title={`${title} Video Player`}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        {/* Controls */}
+        {(availableServers.length > 1 ||
+          (type === "tv" && seasons.length > 0)) && (
+          <div className="mb-6 glass backdrop-blur-md bg-white/10 rounded-xl px-4 py-4 w-full max-w-4xl">
+            <div className="flex flex-wrap items-end justify-center gap-4 sm:gap-6">
+              {availableServers.length > 1 && (
+                <div className="flex flex-col min-w-[140px]">
+                  <label className="text-gray-400 text-xs mb-2 tracking-wide">
+                    Server
+                  </label>
+                  <select
+                    value={selectedServer}
+                    onChange={(e) => handleServerChange(e.target.value)}
+                    className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm focus:outline-none"
+                  >
+                    {availableServers.map((server) => (
+                      <option
+                        key={server.id}
+                        value={server.id}
+                        className="bg-black"
+                      >
+                        {server.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {type === "tv" && seasons.length > 0 && (
+                <>
+                  <div className="flex flex-col min-w-[100px]">
+                    <label className="text-gray-400 text-xs mb-2 tracking-wide">
+                      Season
+                    </label>
+                    <select
+                      value={tvSeason}
+                      onChange={(e) => handleSeasonChange(e.target.value)}
+                      className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm"
+                    >
+                      {seasons.map((s) => (
+                        <option key={s.season_number} value={s.season_number}>
+                          {s.season_number}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col min-w-[100px]">
+                    <label className="text-gray-400 text-xs mb-2 tracking-wide">
+                      Episode
+                    </label>
+                    <select
+                      value={tvEpisode}
+                      onChange={(e) => handleEpisodeChange(e.target.value)}
+                      className="h-10 px-3 rounded-md bg-white/5 border border-white/20 text-white text-sm"
+                    >
+                      {Array.from(
+                        {
+                          length:
+                            seasons.find((s) => s.season_number === tvSeason)
+                              ?.episode_count || 1,
+                        },
+                        (_, i) => i + 1,
+                      ).map((num) => (
+                        <option key={num} value={num}>
+                          {num}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <button
+                      onClick={handleNextEpisode}
+                      className="glass backdrop-blur-sm bg-blue-600/30 px-4 py-2 rounded-md text-sm font-medium text-white border border-blue-400 hover:bg-blue-600/50 transition"
+                    >
+                      {" "}
+                      Next →{" "}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
+
+        {/* Video */}
+        <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl mb-10">
+          {currentUrl ? (
+            <iframe
+              src={currentUrl}
+              className="w-full h-full"
+              // allow="autoplay; encrypted-media; picture-in-picture"
+              // sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-presentation"
+              // referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+              allow="autoplay; encrypted-media; picture-in-picture"
+              title={`${title} Video Player`}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

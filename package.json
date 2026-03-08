@@ -1,5 +1,6 @@
 {
   "name": "free-flixer",
+  "type": "module",
   "version": "1.0.0",
   "description": "Your ultimate streaming destination with premium content",
   "main": "src/app/layout.js",
