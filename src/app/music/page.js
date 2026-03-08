@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Music, Play, Heart, Clock, ListMusic, Users, LogIn, LogOut } from "lucide-react";
+import { Search, Music, Play, Heart, Clock, ListMusic, User, LogIn, LogOut, Library, Home, Star, Plus, Mic, Radio, Disc, Headphones, Users } from "lucide-react";
 import {
   searchTracks,
   getFeaturedPlaylists,
@@ -24,6 +24,9 @@ export default function MusicPage() {
   const [featuredPlaylists, setFeaturedPlaylists] = useState([]);
   const [newReleases, setNewReleases] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [userPlaylists, setUserPlaylists] = useState([]);
+  const [userSavedTracks, setUserSavedTracks] = useState([]);
+  const [userTopTracks, setUserTopTracks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("discover");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -80,6 +83,18 @@ export default function MusicPage() {
       setFeaturedPlaylists(playlists);
       setNewReleases(releases);
       setRecommendations(recs);
+      
+      // Load user-specific data if authenticated
+      if (isAuthenticated) {
+        const [userPlaylistsData, savedTracksData, topTracksData] = await Promise.all([
+          getUserPlaylists(),
+          getUserSavedTracks(),
+          getUserTopTracks(),
+        ]);
+        setUserPlaylists(userPlaylistsData);
+        setUserSavedTracks(savedTracksData);
+        setUserTopTracks(topTracksData);
+      }
     } catch (error) {
       console.error("Error loading initial data:", error);
     }
@@ -221,6 +236,202 @@ export default function MusicPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {activeTab === "discover" && (
           <div className="space-y-12">
+            {/* User Profile Section (Authenticated Only) */}
+            {isAuthenticated && user && (
+              <section>
+                <div className="bg-gradient-to-r from-green-500/20 to-purple-500/20 rounded-2xl p-8 border border-white/20">
+                  <div className="flex items-center space-x-6">
+                    <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-purple-500 rounded-full flex items-center justify-center">
+                      {user.images?.[0] ? (
+                        <img
+                          src={user.images[0].url}
+                          alt={user.display_name}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <span className="text-white text-2xl font-bold">
+                          {user.display_name?.charAt(0) || 'U'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-3xl font-bold text-white mb-2">
+                        {user.display_name}
+                      </h2>
+                      <p className="text-gray-300 mb-4">
+                        {user.email}
+                      </p>
+                      <div className="flex space-x-4 text-sm text-gray-300">
+                        <span>Followers: {user.followers?.total || 0}</span>
+                        <span>•</span>
+                        <span>Spotify User</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-green-400">
+                        {userTopTracks.length} Top Tracks
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {userPlaylists.length} Playlists
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* User Playlists (Authenticated Only) */}
+            {isAuthenticated && userPlaylists.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-white mb-6">
+                  Your Playlists
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {userPlaylists.slice(0, 8).map((playlist) => (
+                    <div
+                      key={playlist.id}
+                      className="group bg-white/5 backdrop-blur-md rounded-xl p-6 hover:bg-white/10 transition-all cursor-pointer"
+                      onClick={() => console.log("Open playlist:", playlist.id)}
+                    >
+                      <div className="aspect-square bg-gradient-to-br from-green-400 to-purple-500 rounded-lg mb-4 flex items-center justify-center">
+                        {playlist.images[0] ? (
+                          <img
+                            src={playlist.images[0].url}
+                            alt={playlist.name}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <Music className="h-16 w-16 text-white/80" />
+                        )}
+                      </div>
+                      <h3 className="text-white font-semibold mb-2 truncate">
+                        {playlist.name}
+                      </h3>
+                      <p className="text-gray-400 text-sm line-clamp-2">
+                        {playlist.description || `${playlist.tracks.total} tracks`}
+                      </p>
+                      <div className="mt-4 flex items-center justify-between text-sm text-gray-300">
+                        <span>{playlist.tracks.total} tracks</span>
+                        <Play className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Your Top Tracks (Authenticated Only) */}
+            {isAuthenticated && userTopTracks.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-white mb-6">
+                  Your Top Tracks
+                </h2>
+                <div className="bg-white/5 backdrop-blur-md rounded-xl">
+                  <div className="divide-y divide-white/10">
+                    {userTopTracks.slice(0, 10).map((track, index) => (
+                      <div
+                        key={track.id}
+                        className="flex items-center space-x-4 p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                        onClick={() => playTrack(track)}
+                      >
+                        <div className="flex-shrink-0">
+                          <span className="text-green-400 text-sm w-8 inline-block font-bold">
+                            {index + 1}
+                          </span>
+                        </div>
+                        <div className="flex-shrink-0">
+                          {track.album.images[0] ? (
+                            <img
+                              src={track.album.images[0].url}
+                              alt={track.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-purple-500 rounded flex items-center justify-center">
+                              <Music className="h-6 w-6 text-white/80" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-white font-medium truncate">
+                            {track.name}
+                          </h4>
+                          <p className="text-gray-400 text-sm truncate">
+                            {track.artists[0]?.name}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                            <Heart className="h-4 w-4" />
+                          </button>
+                          <span className="text-gray-400 text-sm">
+                            {formatDuration(track.duration_ms)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Your Saved Tracks (Authenticated Only) */}
+            {isAuthenticated && userSavedTracks.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-white mb-6">
+                  Your Liked Songs
+                </h2>
+                <div className="bg-white/5 backdrop-blur-md rounded-xl">
+                  <div className="divide-y divide-white/10">
+                    {userSavedTracks.slice(0, 10).map((item, index) => {
+                      const track = item.track;
+                      return (
+                        <div
+                          key={track.id}
+                          className="flex items-center space-x-4 p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                          onClick={() => playTrack(track)}
+                        >
+                          <div className="flex-shrink-0">
+                            <span className="text-gray-400 text-sm w-8 inline-block">
+                              {index + 1}
+                            </span>
+                          </div>
+                          <div className="flex-shrink-0">
+                            {track.album.images[0] ? (
+                              <img
+                                src={track.album.images[0].url}
+                                alt={track.name}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-purple-500 rounded flex items-center justify-center">
+                                <Music className="h-6 w-6 text-white/80" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium truncate">
+                              {track.name}
+                            </h4>
+                            <p className="text-gray-400 text-sm truncate">
+                              {track.artists[0]?.name}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button className="p-2 text-gray-400 hover:text-white transition-colors">
+                              <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+                            </button>
+                            <span className="text-gray-400 text-sm">
+                              {formatDuration(track.duration_ms)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            )}
             {/* Featured Playlists */}
             {featuredPlaylists.length > 0 && (
               <section>
