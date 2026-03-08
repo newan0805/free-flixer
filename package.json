@@ -5,6 +5,7 @@
   "main": "src/app/layout.js",
   "scripts": {
     "dev": "next dev",
+    "dev-https": "next dev --experimental-https -p 4000",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -28,10 +29,12 @@
   },
   "homepage": "https://github.com/your-username/free-flixer#readme",
   "dependencies": {
+    "lucide-react": "^0.577.0",
     "next": "^16.1.6",
     "postcss": "^8.5.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "spotify-web-api-node": "^5.0.2",
     "workbox-precaching": "^7.4.0"
   },
   "devDependencies": {
