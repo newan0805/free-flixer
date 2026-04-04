@@ -7,6 +7,7 @@ import {
   saveServer,
   getEmbedUrl,
 } from "@utils/servers";
+import { myList } from "@utils/myList";
 
 const VideoPlayer = ({
   title,
