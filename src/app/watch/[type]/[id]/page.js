@@ -25,6 +25,17 @@ const WatchPage = ({ params }) => {
   const [urlParams, setUrlParams] = useState({ season: 1, episode: 1 });
   const [nextEpisode, setNextEpisode] = useState(null);
   const [isInWatchLater, setIsInWatchLater] = useState(false);
+  const [adBlockEnabled, setAdBlockEnabled] = useState(true);
+
+  // Initialize TV progress from localStorage
+  useEffect(() => {
+    if (unwrappedParams.type === 'tv') {
+      const progress = myList.getWatchProgress(unwrappedParams.id);
+      if (progress) {
+        setUrlParams({ season: progress.season, episode: progress.episode });
+      }
+    }
+  }, [unwrappedParams.type, unwrappedParams.id]);
 
   const fetchContentDetails = useCallback(async () => {
     try {
@@ -206,6 +217,7 @@ const WatchPage = ({ params }) => {
               allowFullScreen
               allow="autoplay; encrypted-media; picture-in-picture"
               title={`${title} Video Player`}
+              sandbox={adBlockEnabled ? "allow-forms allow-scripts allow-same-origin" : ""}
             />
 
             {/* Overlay */}
@@ -242,6 +254,31 @@ const WatchPage = ({ params }) => {
                   </svg>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Defense Toggle */}
+        <div className="max-w-6xl mx-auto px-4 mt-6 mb-4">
+          <div className="glass rounded-lg p-4 backdrop-blur-md bg-white/10 border border-white/20 shadow-lg">
+            <label className="block text-gray-300 text-sm font-semibold mb-3">AD-BLOCK FLAG</label>
+            <div className="flex flex-wrap gap-3 items-center">
+              <select
+                value={adBlockEnabled ? 1 : 0}
+                onChange={(e) => setAdBlockEnabled(e.target.value === "1")}
+                className="glass text-white px-4 py-2 rounded-lg text-sm font-medium focus:outline-none bg-white/5 border border-white/20 hover:border-white/40 transition-all"
+              >
+                <option value="1">1 (Enabled - Defensive)</option>
+                <option value="0">0 (Disabled - Direct)</option>
+              </select>
+
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                adBlockEnabled 
+                  ? 'bg-green-600/30 text-green-300 border border-green-400/60' 
+                  : 'bg-red-600/30 text-red-300 border border-red-400/60'
+              }`}>
+                AD-BLOCK: {adBlockEnabled ? "ON" : "OFF"}
+              </span>
             </div>
           </div>
         </div>
