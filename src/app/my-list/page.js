@@ -13,6 +13,7 @@ const MyListPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('my-list');
   const [viewMode, setViewMode] = useState('grid');
+  const [isSortUpsideDown, setIsSortUpsideDown] = useState(false);
 
   useEffect(() => {
     fetchListItems();
@@ -94,34 +95,44 @@ const MyListPage = () => {
 
   const handleCardClick = (item) => {
     const type = item.type === 'movie' ? 'movie' : 'tv';
-    window.location.href = `/${type}/${item.id}`;
+    globalThis.location.href = `/${type}/${item.id}`;
+  };
+
+  const sortItemsByAddedTime = (items) => {
+    return [...items].sort((a, b) => {
+      const aTime = Number(a?.addedAt || 0);
+      const bTime = Number(b?.addedAt || 0);
+
+      if (aTime === bTime) {
+        return isSortUpsideDown
+          ? Number(b?.id || 0) - Number(a?.id || 0)
+          : Number(a?.id || 0) - Number(b?.id || 0);
+      }
+
+      // Default: latest at the end. Upside-down: latest at the top.
+      return isSortUpsideDown ? bTime - aTime : aTime - bTime;
+    });
   };
 
   const getTabContent = () => {
-    let items = [];
-    let emptyMessage = '';
-    let emptyDescription = '';
+    let items = sortItemsByAddedTime(myListItems);
+    let emptyMessage = "Your My List is empty";
+    let emptyDescription = "Add movies and TV shows to your list to watch them later";
 
     switch (activeTab) {
-      case 'my-list':
-        items = myListItems;
-        emptyMessage = "Your My List is empty";
-        emptyDescription = "Add movies and TV shows to your list to watch them later";
-        break;
       case 'watched':
-        items = watchedItems;
+        items = sortItemsByAddedTime(watchedItems);
         emptyMessage = "No watched items yet";
         emptyDescription = "Start watching content to see your watched history here";
         break;
       case 'to-watch-later':
-        items = toWatchLaterItems;
+        items = sortItemsByAddedTime(toWatchLaterItems);
         emptyMessage = "Your watch later list is empty";
         emptyDescription = "Add content to your watch later list to save it for future viewing";
         break;
+      case 'my-list':
       default:
-        items = myListItems;
-        emptyMessage = "Your My List is empty";
-        emptyDescription = "Add movies and TV shows to your list to watch them later";
+        break;
     }
 
     if (isLoading) {
@@ -252,7 +263,16 @@ const MyListPage = () => {
             </div>
 
             {/* View Mode Toggle */}
-            <ViewModeToggle currentView={viewMode} onViewChange={setViewMode} />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsSortUpsideDown(prev => !prev)}
+                className="px-4 py-2 rounded-full font-medium transition-colors glass border border-gray-700 text-gray-200 hover:border-white hover:text-white"
+                title="Toggle sort direction"
+              >
+                {isSortUpsideDown ? 'Sort: Latest First' : 'Sort: Latest Last'}
+              </button>
+              <ViewModeToggle currentView={viewMode} onViewChange={setViewMode} />
+            </div>
           </div>
         </div>
 

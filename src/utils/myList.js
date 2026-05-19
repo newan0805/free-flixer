@@ -23,7 +23,11 @@ export const myList = {
       const exists = currentItems.some(i => i.id === item.id && i.type === item.type);
       
       if (!exists) {
-        const updatedItems = [...currentItems, item];
+        const itemWithMeta = {
+          ...item,
+          addedAt: Date.now(),
+        };
+        const updatedItems = [...currentItems, itemWithMeta];
         localStorage.setItem('myList', JSON.stringify(updatedItems));
       }
     } catch (error) {
@@ -90,7 +94,11 @@ export const myList = {
       const exists = watchedItems.some(i => i.id === item.id && i.type === item.type);
       
       if (!exists) {
-        const updatedItems = [...watchedItems, item];
+        const itemWithMeta = {
+          ...item,
+          addedAt: Date.now(),
+        };
+        const updatedItems = [...watchedItems, itemWithMeta];
         localStorage.setItem('watchedItems', JSON.stringify(updatedItems));
       }
     } catch (error) {
@@ -146,7 +154,11 @@ export const myList = {
       const exists = toWatchLaterItems.some(i => i.id === item.id && i.type === item.type);
       
       if (!exists) {
-        const updatedItems = [...toWatchLaterItems, item];
+        const itemWithMeta = {
+          ...item,
+          addedAt: Date.now(),
+        };
+        const updatedItems = [...toWatchLaterItems, itemWithMeta];
         localStorage.setItem('toWatchLater', JSON.stringify(updatedItems));
       }
     } catch (error) {

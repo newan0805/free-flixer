@@ -157,8 +157,9 @@ const Navigation = () => {
       ),
     },
     {
-      name: "Music",
-      href: "/music",
+      name: "Watch Together",
+      href: "/watch-together",
+      badge: "New",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -171,11 +172,58 @@ const Navigation = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+            d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2m16-10a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
           />
         </svg>
       ),
     },
+    // {
+    //   name: "Books",
+    //   href: "/booklibrary",
+    //   badge: "New",
+    //   icon: (
+    //     <svg
+    //       xmlns="http://www.w3.org/2000/svg"
+    //       className="w-5 h-5"
+    //       fill="none"
+    //       viewBox="0 0 24 24"
+    //       stroke="currentColor"
+    //     >
+    //       <path
+    //         strokeLinecap="round"
+    //         strokeLinejoin="round"
+    //         strokeWidth={2}
+    //         d="M4 6.5A2.5 2.5 0 016.5 4H20v14.5A1.5 1.5 0 0118.5 20H6.5A2.5 2.5 0 014 17.5v-11z"
+    //       />
+    //       <path
+    //         strokeLinecap="round"
+    //         strokeLinejoin="round"
+    //         strokeWidth={2}
+    //         d="M8 8h8M8 12h8M8 16h5"
+    //       />
+    //     </svg>
+    //   ),
+    // },
+    // {
+    //   name: "Music",
+    //   href: "/music",
+    //   icon: (
+    //     <svg
+    //       xmlns="http://www.w3.org/2000/svg"
+    //       className="w-5 h-5"
+    //       fill="none"
+    //       viewBox="0 0 24 24"
+    //       stroke="currentColor"
+    //     >
+    //       <path
+    //         strokeLinecap="round"
+    //         strokeLinejoin="round"
+    //         strokeWidth={2}
+    //         d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+    //       />
+    //     </svg>
+    //   ),
+    // },
   ];
 
   return (
@@ -261,7 +309,7 @@ const Navigation = () => {
 
                 {/* Search Suggestions Dropdown */}
                 {showSuggestions && searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 glass border border-gray-700 rounded-lg mt-2 shadow-xl z-50 max-h-80 overflow-y-auto custom-scrollbar">
+                  <div className="absolute top-full left-0 right-0 bg-black/75 backdrop-blur-md border border-white/15 rounded-lg mt-2 shadow-xl z-50 max-h-80 overflow-y-auto custom-scrollbar">
                     <div className="p-3">
                       <p className="text-gray-400 text-sm font-medium mb-3">
                         Search Results
@@ -287,7 +335,7 @@ const Navigation = () => {
                                 <h3 className="text-white text-sm font-semibold truncate group-hover:text-blue-400 transition-colors">
                                   {suggestion.title}
                                 </h3>
-                                <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
+                                <span className="text-xs text-gray-300 bg-black/50 px-2 py-1 rounded-full border border-white/10">
                                   {formatType(suggestion.type)}
                                 </span>
                               </div>
@@ -359,6 +407,11 @@ const Navigation = () => {
                 >
                   <span className="flex items-center">{item.icon}</span>
                   <span>{item.name}</span>
+                  {item.badge && (
+                    <span className="rounded-full border border-amber-400/50 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300">
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -424,6 +477,11 @@ const Navigation = () => {
                 >
                   <span className="text-lg">{item.icon}</span>
                   <span className="font-medium">{item.name}</span>
+                  {item.badge && (
+                    <span className="ml-auto rounded-full border border-amber-400/50 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300">
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

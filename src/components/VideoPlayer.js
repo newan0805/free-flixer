@@ -8,6 +8,7 @@ import {
   getEmbedUrl,
 } from "@utils/servers";
 import { myList } from "@utils/myList";
+import WatchTogetherChatModal from "./WatchTogetherChatModal";
 
 const VideoPlayer = ({
   title,
@@ -45,6 +46,15 @@ const VideoPlayer = ({
 
   // Defense toggle state
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
+
+  // Chat modal state
+  const [chatOpen, setChatOpen] = useState(false);
+  
+  // Generate a unique room ID for this watch session
+  const roomId = useMemo(() => {
+    const seed = `${type}-${tmdbId}-${tvSeason}-${tvEpisode}`;
+    return btoa(seed).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+  }, [type, tmdbId, tvSeason, tvEpisode]);
 
   const currentUrl = useMemo(
     () =>
@@ -95,18 +105,27 @@ const VideoPlayer = ({
     }
   };
 
+  const handleClose = () => {
+    // Persist current TV position so reopening resumes at the same episode.
+    if (type === "tv") {
+      myList.saveWatchProgress(tmdbId, tvSeason, tvEpisode);
+    }
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black z-[9999] overflow-y-auto overscroll-y-contain">
+      <div className="min-h-full w-full flex flex-col items-center justify-start sm:justify-center px-3 sm:px-4 py-16 sm:py-4">
       {/* Close Button */}
       <button
-        onClick={onClose}
+        onClick={handleClose}
         className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-20 bg-black/50 p-2 rounded-full"
       >
         ✕
       </button>
 
       {/* Title */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-4 sm:mb-6 w-full max-w-5xl">
         <h2 className="text-white text-xl sm:text-2xl font-bold">{title}</h2>
         <p className="text-gray-400 text-sm">
           {type === "movie"
@@ -117,8 +136,8 @@ const VideoPlayer = ({
 
       {/* Defense Toggle */}
       {enableDefense && (
-        <div className="mb-4 glass backdrop-blur-md bg-white/10 rounded-xl px-6 py-4 w-full max-w-4xl">
-          <div className="flex items-center justify-center gap-6">
+        <div className="mb-4 glass backdrop-blur-md bg-white/10 rounded-xl px-4 sm:px-6 py-4 w-full max-w-4xl">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             <div className="flex flex-col min-w-[160px]">
               <label className="text-gray-400 text-xs mb-2 tracking-wide">
                 AD-BLOCK FLAG
@@ -148,8 +167,8 @@ const VideoPlayer = ({
       {/* Controls */}
       {(availableServers.length > 1 ||
         (type === "tv" && seasons.length > 0)) && (
-        <div className="mb-6 glass backdrop-blur-md bg-white/10 rounded-xl px-6 py-4 w-full max-w-4xl">
-          <div className="flex flex-wrap items-end justify-center gap-6">
+        <div className="mb-4 sm:mb-6 glass backdrop-blur-md bg-white/10 rounded-xl px-4 sm:px-6 py-4 w-full max-w-4xl">
+          <div className="flex flex-wrap items-end justify-center gap-4 sm:gap-6">
             {availableServers.length > 1 && (
               <div className="flex flex-col min-w-[140px]">
                 <label className="text-gray-400 text-xs mb-2 tracking-wide">
@@ -227,12 +246,23 @@ const VideoPlayer = ({
                 </div>
               </>
             )}
+
+            {/* Chat Icon Button */}
+            <div className="flex flex-col justify-end">
+              <button
+                onClick={() => setChatOpen(true)}
+                className="glass backdrop-blur-sm bg-purple-600/30 px-4 py-2 rounded-md text-sm font-medium text-white border border-purple-400 hover:bg-purple-600/50 transition flex items-center gap-2"
+                title="Open Watch Together Chat"
+              >
+                💬 Chat
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Video */}
-      <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+      <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl mb-2">
         {currentUrl ? (
           <iframe
             src={currentUrl}
@@ -247,6 +277,15 @@ const VideoPlayer = ({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         )}
+      </div>
+
+      {/* Chat Modal */}
+      <WatchTogetherChatModal
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        roomId={roomId}
+        watchUrl={`/watch/${type}/${tmdbId}?season=${tvSeason}&episode=${tvEpisode}`}
+      />
       </div>
     </div>
   );

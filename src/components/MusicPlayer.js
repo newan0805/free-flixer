@@ -28,9 +28,12 @@ const MusicPlayer = ({
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDragging] = useState(false);
   const audioRef = useRef(null);
   const progressRef = useRef(null);
+  const lastSavedSecondRef = useRef(-1);
+
+  const getProgressKey = (trackId) => `trackProgress_${trackId}`;
 
   useEffect(() => {
     if (audioRef.current) {
@@ -46,27 +49,62 @@ const MusicPlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
 
+    const restoreProgress = () => {
+      if (!track?.id) return;
+
+      const saved = localStorage.getItem(getProgressKey(track.id));
+      const savedTime = saved ? Number.parseFloat(saved) : Number.NaN;
+
+      if (Number.isFinite(savedTime) && savedTime > 0) {
+        const safeTime = audio.duration
+          ? Math.min(savedTime, Math.max(0, audio.duration - 1))
+          : savedTime;
+        audio.currentTime = safeTime;
+        setCurrentTime(safeTime);
+      }
+    };
+
     const updateTime = () => {
       if (!isDragging) {
         setCurrentTime(audio.currentTime);
       }
       setDuration(audio.duration || 0);
+
+      if (track?.id) {
+        const currentSecond = Math.floor(audio.currentTime);
+        if (currentSecond > 0 && currentSecond % 5 === 0 && currentSecond !== lastSavedSecondRef.current) {
+          lastSavedSecondRef.current = currentSecond;
+          localStorage.setItem(getProgressKey(track.id), String(audio.currentTime));
+        }
+      }
     };
 
     const handleEnded = () => {
+      if (track?.id) {
+        localStorage.removeItem(getProgressKey(track.id));
+      }
       if (onPlayNext) onPlayNext();
     };
 
+    audio.addEventListener("loadedmetadata", restoreProgress);
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateTime);
     audio.addEventListener("ended", handleEnded);
 
+    if (audio.readyState >= 1) {
+      restoreProgress();
+    }
+
     return () => {
+      if (track?.id && audio.currentTime > 0) {
+        localStorage.setItem(getProgressKey(track.id), String(audio.currentTime));
+      }
+      audio.removeEventListener("loadedmetadata", restoreProgress);
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateTime);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [isDragging, onPlayNext]);
+  }, [isDragging, onPlayNext, track?.id]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -85,7 +123,7 @@ const MusicPlayer = ({
   };
 
   const handleVolumeChange = (e) => {
-    const newVolume = parseFloat(e.target.value);
+    const newVolume = Number.parseFloat(e.target.value);
     onVolumeChange(newVolume);
     if (audioRef.current) {
       audioRef.current.volume = newVolume;
@@ -95,7 +133,7 @@ const MusicPlayer = ({
   if (!track) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent backdrop-blur-md border-t border-white/10 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent backdrop-blur-md border-t border-white/10 z-50 max-h-[70vh] overflow-y-auto overscroll-y-contain">
       {/* Hidden audio element for actual playback */}
       <audio
         ref={audioRef}
@@ -106,9 +144,9 @@ const MusicPlayer = ({
 
       {/* Player Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Track Info */}
-          <div className="flex items-center space-x-4 flex-1">
+          <div className="flex items-center space-x-3 sm:space-x-4 w-full lg:flex-1 min-w-0">
             <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-purple-500 rounded-lg flex items-center justify-center">
               {track.album?.images?.[0] ? (
                 <img
@@ -131,7 +169,7 @@ const MusicPlayer = ({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-2">
               <button className="p-2 text-gray-400 hover:text-white transition-colors">
                 <Heart className="h-4 w-4" />
               </button>
@@ -145,7 +183,7 @@ const MusicPlayer = ({
           </div>
 
           {/* Player Controls */}
-          <div className="flex flex-col items-center space-y-2 flex-1 max-w-md mx-8">
+          <div className="flex flex-col items-center space-y-2 w-full lg:flex-1 lg:max-w-md lg:mx-8">
             {/* Progress Bar */}
             <div className="flex items-center space-x-3 w-full">
               <span className="text-xs text-gray-400">
@@ -212,7 +250,7 @@ const MusicPlayer = ({
           </div>
 
           {/* Volume Control */}
-          <div className="flex items-center space-x-2 flex-1 justify-end">
+          <div className="flex items-center space-x-2 w-full lg:flex-1 lg:justify-end">
             <VolumeX
               className={`h-4 w-4 ${volume === 0 ? "text-green-400" : "text-gray-400 hover:text-white"}`}
             />

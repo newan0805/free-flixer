@@ -5,6 +5,8 @@ import { tmdbService } from "@controllers/tmdb";
 import { getAvailableServers, getSavedServer, saveServer, getEmbedUrl } from "@utils/servers";
 import { myList } from "@utils/myList";
 
+const WATCH_TOGETHER_STORAGE_KEY = "watchTogetherInvites";
+
 const WatchPage = ({ params }) => {
   const unwrappedParams = use(params);
   const [content, setContent] = useState(null);
@@ -26,16 +28,30 @@ const WatchPage = ({ params }) => {
   const [nextEpisode, setNextEpisode] = useState(null);
   const [isInWatchLater, setIsInWatchLater] = useState(false);
   const [adBlockEnabled, setAdBlockEnabled] = useState(true);
+  const [watchTogetherMessage, setWatchTogetherMessage] = useState("");
+  const shareTitle = content?.title || content?.name || "Unknown";
 
-  // Initialize TV progress from localStorage
-  useEffect(() => {
-    if (unwrappedParams.type === 'tv') {
-      const progress = myList.getWatchProgress(unwrappedParams.id);
-      if (progress) {
-        setUrlParams({ season: progress.season, episode: progress.episode });
-      }
+  const readWatchTogetherLinks = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(WATCH_TOGETHER_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error("Error reading watch together links:", error);
+      return [];
     }
-  }, [unwrappedParams.type, unwrappedParams.id]);
+  }, []);
+
+  const saveWatchTogetherLink = useCallback((entry) => {
+    try {
+      const current = readWatchTogetherLinks();
+      const deduped = current.filter((item) => item.url !== entry.url);
+      const updated = [entry, ...deduped].slice(0, 50);
+      localStorage.setItem(WATCH_TOGETHER_STORAGE_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.error("Error saving watch together link:", error);
+    }
+  }, [readWatchTogetherLinks]);
 
   const fetchContentDetails = useCallback(async () => {
     try {
@@ -58,11 +74,47 @@ const WatchPage = ({ params }) => {
 
   useEffect(() => {
     // Parse URL parameters
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      const season = parseInt(url.searchParams.get("season") || "1");
-      const episode = parseInt(url.searchParams.get("episode") || "1");
+    if (globalThis.window !== undefined) {
+      const url = new URL(globalThis.window.location.href);
+      const hasSeasonParam = url.searchParams.has("season");
+      const hasEpisodeParam = url.searchParams.has("episode");
+      const serverParam = url.searchParams.get("server");
+      const isWatchTogetherLink = url.searchParams.get("wt") === "1";
+      const sessionId = url.searchParams.get("sid") || "";
+
+      let season = Number.parseInt(url.searchParams.get("season") || "1", 10);
+      let episode = Number.parseInt(url.searchParams.get("episode") || "1", 10);
+
+      if (unwrappedParams.type === "tv" && (!hasSeasonParam || !hasEpisodeParam)) {
+        const progress = myList.getWatchProgress(unwrappedParams.id);
+        if (progress?.season && progress?.episode) {
+          season = progress.season;
+          episode = progress.episode;
+        }
+      }
+
       setUrlParams({ season, episode });
+
+      if (serverParam && availableServers.some((server) => server.id === serverParam)) {
+        setSelectedServer(serverParam);
+        saveServer(serverParam);
+      }
+
+      if (isWatchTogetherLink) {
+        saveWatchTogetherLink({
+          id: sessionId || `wt-${Date.now()}`,
+          roomId: sessionId || "",
+          title: `Watch Together ${unwrappedParams.type.toUpperCase()} ${unwrappedParams.id}`,
+          type: unwrappedParams.type,
+          contentId: unwrappedParams.id,
+          season,
+          episode,
+          server: serverParam || selectedServer,
+          url: url.toString(),
+          openedAt: Date.now(),
+        });
+        setWatchTogetherMessage("Watch Together link joined and saved locally.");
+      }
       
       // Check if in watch later
       const inList = myList.isInList(unwrappedParams.id, 'watch-later');
@@ -70,7 +122,14 @@ const WatchPage = ({ params }) => {
     }
 
     fetchContentDetails();
-  }, [fetchContentDetails, unwrappedParams.type, unwrappedParams.id]);
+  }, [
+    availableServers,
+    fetchContentDetails,
+    saveWatchTogetherLink,
+    selectedServer,
+    unwrappedParams.id,
+    unwrappedParams.type,
+  ]);
 
   useEffect(() => {
     // Update current URL when selection or params change
@@ -82,6 +141,12 @@ const WatchPage = ({ params }) => {
     });
     setCurrentUrl(url);
   }, [selectedServer, unwrappedParams.type, unwrappedParams.id, urlParams.season, urlParams.episode]);
+
+  useEffect(() => {
+    if (unwrappedParams.type === "tv") {
+      myList.saveWatchProgress(unwrappedParams.id, urlParams.season, urlParams.episode);
+    }
+  }, [unwrappedParams.type, unwrappedParams.id, urlParams.season, urlParams.episode]);
 
   const handleServerChange = (serverId) => {
     setSelectedServer(serverId);
@@ -161,7 +226,7 @@ const WatchPage = ({ params }) => {
   const handlePlayNext = useCallback(() => {
     if (nextEpisode) {
       saveWatchState();
-      window.location.href = `/watch/${unwrappedParams.type}/${unwrappedParams.id}?season=${nextEpisode.season}&episode=${nextEpisode.episode}`;
+      globalThis.location.href = `/watch/${unwrappedParams.type}/${unwrappedParams.id}?season=${nextEpisode.season}&episode=${nextEpisode.episode}`;
     }
   }, [nextEpisode, unwrappedParams.type, unwrappedParams.id, saveWatchState]);
 
@@ -182,6 +247,63 @@ const WatchPage = ({ params }) => {
       setIsInWatchLater(true);
     }
   }, [isInWatchLater, unwrappedParams.id, content, urlParams.season, urlParams.episode, saveWatchState]);
+
+  const handleCreateWatchTogetherLink = useCallback(async () => {
+    if (!globalThis.window) return;
+
+    const watchUrl = new URL(`${globalThis.window.location.origin}/watch/${unwrappedParams.type}/${unwrappedParams.id}`);
+    if (unwrappedParams.type === "tv") {
+      watchUrl.searchParams.set("season", String(urlParams.season));
+      watchUrl.searchParams.set("episode", String(urlParams.episode));
+    }
+    watchUrl.searchParams.set("server", selectedServer);
+    watchUrl.searchParams.set("wt", "1");
+
+    const sessionId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `wt-${Date.now()}`;
+
+    watchUrl.searchParams.set(
+      "sid",
+      sessionId,
+    );
+
+    const shareUrl = new URL(`${globalThis.window.location.origin}/watch-together`);
+    shareUrl.searchParams.set("room", sessionId);
+    shareUrl.searchParams.set("watch", encodeURIComponent(watchUrl.toString()));
+
+    const shareEntry = {
+      id: sessionId,
+      roomId: sessionId,
+      title: shareTitle,
+      type: unwrappedParams.type,
+      contentId: unwrappedParams.id,
+      season: urlParams.season,
+      episode: urlParams.episode,
+      server: selectedServer,
+      url: shareUrl.toString(),
+      createdAt: Date.now(),
+    };
+
+    saveWatchTogetherLink(shareEntry);
+
+    try {
+      await navigator.clipboard.writeText(shareUrl.toString());
+      setWatchTogetherMessage("Watch Together link copied and saved locally.");
+    } catch (error) {
+      console.error("Clipboard copy failed:", error);
+      setWatchTogetherMessage("Link saved locally. Copy from browser URL if clipboard is blocked.");
+    }
+  }, [
+    saveWatchTogetherLink,
+    selectedServer,
+    shareTitle,
+    unwrappedParams.id,
+    unwrappedParams.type,
+    urlParams.episode,
+    urlParams.season,
+  ]);
 
 
 
@@ -235,7 +357,7 @@ const WatchPage = ({ params }) => {
                 <button
                   onClick={() => {
                     saveWatchState();
-                    window.history.back();
+                    globalThis.history.back();
                   }}
                   className="text-white hover:text-gray-300 transition-colors"
                 >
@@ -322,6 +444,21 @@ const WatchPage = ({ params }) => {
         )}
 
         {/* Next Episode & Controls */}
+        <div className="max-w-6xl mx-auto px-4 mb-4 flex flex-wrap gap-3 items-center">
+          <button
+            onClick={handleCreateWatchTogetherLink}
+            className="glass px-6 py-3 rounded-lg font-semibold text-white bg-indigo-600/40 border border-indigo-400/60 hover:bg-indigo-600/60 hover:border-indigo-400 transition-all shadow-lg flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5V9H2v11h5m10 0v-8m0 8H7m10 0l-5-5m0 0l-5 5m5-5V4" />
+            </svg>
+            Watch Together
+          </button>
+          {watchTogetherMessage ? (
+            <span className="text-sm text-indigo-200">{watchTogetherMessage}</span>
+          ) : null}
+        </div>
+
         {unwrappedParams.type === 'tv' && (
           <div className="max-w-6xl mx-auto px-4 mb-6 flex flex-wrap gap-3">
             {nextEpisode && (

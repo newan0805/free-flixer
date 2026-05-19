@@ -6,6 +6,8 @@ import { tmdbService } from '@controllers/tmdb';
 import { myList } from '@utils/myList';
 import VideoPlayer from '@components/VideoPlayer';
 import MovieCard from '@components/MovieCard';
+import NicknameModal from '@components/NicknameModal';
+import ShareLinkModal from '@components/ShareLinkModal';
 
 const TVDetailsPage = ({ params }) => {
   const unwrappedParams = use(params);
@@ -18,6 +20,8 @@ const TVDetailsPage = ({ params }) => {
   const [isVideoPlayerOpen, setIsVideoPlayerOpen] = useState(false);
   const [isInMyList, setIsInMyList] = useState(false);
   const [watchProgress, setWatchProgress] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showNicknameModal, setShowNicknameModal] = useState(false);
 
   const fetchTVShowDetails = useCallback(async () => {
     try {
@@ -286,6 +290,16 @@ const TVDetailsPage = ({ params }) => {
                     {isInMyList ? 'Remove from My List' : 'Add to My List'}
                   </button>
 
+                  <button
+                    className="flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-colors glass border border-purple-500 text-purple-300 hover:bg-purple-600/20"
+                    onClick={() => setShowShareModal(true)}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C9.547 15.714 11.493 17.5 13.844 17.5c1.148 0 2.23-.356 3.101-1.023M13.844 3.5c2.351 0 4.297 1.786 5.16 4.158M3 12a9 9 0 015.694-8.776M3 12a9 9 0 0015.348 4.364" />
+                    </svg>
+                    Share Watch
+                  </button>
+
                   {/* Resume Button */}
                   {watchProgress && (
                     <button 
@@ -392,6 +406,26 @@ const TVDetailsPage = ({ params }) => {
           seasons={tvShow.seasons || []}
         />
       )}
+
+      {/* Share Watch Together Modal */}
+      <ShareLinkModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        onOpenNicknameModal={() => setShowNicknameModal(true)}
+        watchUrl={`/watch/tv/${unwrappedParams.id}?season=${selectedSeason}&episode=${selectedEpisode}`}
+        title="Share Watch Together Link"
+      />
+
+      {/* Nickname Modal */}
+      <NicknameModal
+        isOpen={showNicknameModal}
+        onClose={() => setShowNicknameModal(false)}
+        onConfirm={() => {
+          const watchUrl = `/watch/tv/${unwrappedParams.id}?season=${selectedSeason}&episode=${selectedEpisode}`;
+          globalThis.location.href = `/watch-together?watch=${encodeURIComponent(watchUrl)}`;
+        }}
+        title="Set Your Nickname"
+      />
     </div>
   );
 };

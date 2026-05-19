@@ -14,6 +14,18 @@ const nextConfig = {
         port: '',
         pathname: '/t/p/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'covers.openlibrary.org',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.gutenberg.org',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   // Configure Turbopack to work with our @ alias paths
