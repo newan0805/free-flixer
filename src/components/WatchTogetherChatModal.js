@@ -76,6 +76,11 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   }, [messages]);
   const canUseRealtimeSocket = useCallback(async () => {
     try {
+      await fetch('/api/socket', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+
       const response = await fetch('/api/socket_io/?EIO=4&transport=polling', {
         method: 'GET',
         cache: 'no-store',

@@ -80,6 +80,11 @@ export default function WatchTogetherPage() {
 
   const canUseRealtimeSocket = useCallback(async () => {
     try {
+      await fetch("/api/socket", {
+        method: "GET",
+        cache: "no-store",
+      });
+
       const response = await fetch("/api/socket_io/?EIO=4&transport=polling", {
         method: "GET",
         cache: "no-store",
@@ -239,9 +244,6 @@ export default function WatchTogetherPage() {
         setActiveSocket(null);
         return;
       }
-
-      await fetch("/api/socket");
-      if (!isMounted) return;
 
       const { io } = await import("socket.io-client");
       const socket = io({ path: "/api/socket_io" });

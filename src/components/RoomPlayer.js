@@ -188,19 +188,21 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
       startSyncCountdown(at);
     };
 
-    socket.on("state-update", handleStateUpdate);
-    socket.on("do-sync-play", handleSyncPlay);
-
-    socket.on("connect", () => {
+    const handleConnect = () => {
       const initialState = buildLocalState();
       if (initialState && roomIdRef.current) {
         socket.emit("sync-state", { roomId: roomIdRef.current, state: initialState });
       }
-    });
+    };
+
+    socket.on("state-update", handleStateUpdate);
+    socket.on("do-sync-play", handleSyncPlay);
+    socket.on("connect", handleConnect);
 
     return () => {
       socket.off("state-update", handleStateUpdate);
       socket.off("do-sync-play", handleSyncPlay);
+      socket.off("connect", handleConnect);
       if (countdownRef.current) clearTimeout(countdownRef.current);
     };
   }, [socket, buildLocalState, isSocketSupportedHost, startSyncCountdown]);

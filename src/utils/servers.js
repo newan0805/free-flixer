@@ -93,9 +93,16 @@ export const servers = [
   }
 ];
 
+const isBlockedBaseUrl = (baseUrl) => {
+  if (!baseUrl) return true;
+
+  // vidsrc.icu has frequent DNS failures in production networks.
+  return /vidsrc\.icu/i.test(baseUrl);
+};
+
 // Get available servers (filter out undefined URLs)
 export const getAvailableServers = () => {
-  return servers.filter(server => server.baseUrl);
+  return servers.filter((server) => server.baseUrl && !isBlockedBaseUrl(server.baseUrl));
 };
 
 // Get default server
@@ -125,7 +132,7 @@ export const SERVER_STORAGE_KEY = 'free-flixer-server';
 
 // Get saved server from localStorage
 export const getSavedServer = () => {
-  if (typeof window === 'undefined') return getDefaultServer().id;
+  if (globalThis.window === undefined) return getDefaultServer().id;
   
   try {
     const saved = localStorage.getItem(SERVER_STORAGE_KEY);
@@ -146,7 +153,7 @@ export const getSavedServer = () => {
 
 // Save server to localStorage
 export const saveServer = (serverId) => {
-  if (typeof window === 'undefined') return;
+  if (globalThis.window === undefined) return;
   
   try {
     localStorage.setItem(SERVER_STORAGE_KEY, serverId);
