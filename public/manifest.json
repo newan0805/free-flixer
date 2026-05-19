@@ -103,10 +103,4 @@
       ]
     }
   ],
-  "protocol_handlers": [
-    {
-      "protocol": "web+free-flixer",
-      "url": "/?action=%s"
-    }
-  ]
 }

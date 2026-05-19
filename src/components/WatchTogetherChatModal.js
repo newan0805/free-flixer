@@ -69,6 +69,13 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const storageKey = useMemo(() => getChatStorageKey(roomId, watchUrl), [roomId, watchUrl]);
+  const isSocketSupportedHost = useMemo(() => {
+    const hostname = globalThis.location?.hostname || '';
+    return hostname === 'localhost'
+      || hostname === '127.0.0.1'
+      || hostname.endsWith('.local')
+      || hostname.includes('vercel.app') === false;
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,7 +122,7 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !roomId) return;
+    if (!isOpen || !roomId || !isSocketSupportedHost) return;
 
     const nickname = localStorage.getItem('watchTogetherNickname') || 'Anonymous';
 
@@ -147,7 +154,7 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
         socketRef.current.disconnect();
       }
     };
-  }, [isOpen, roomId, storageKey]);
+  }, [isOpen, roomId, storageKey, isSocketSupportedHost]);
 
   const isValidGifUrl = (url) => {
     return url.match(/\.(gif|png|jpg|jpeg)$/i) || 

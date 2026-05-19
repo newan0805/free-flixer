@@ -68,11 +68,13 @@ export default function WatchTogetherPage() {
 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messagesRef = useRef(messages);
   // Refs so socket handlers always read fresh values without triggering reconnects
   const nickRef = useRef(nickname);
   const roomIdRef = useRef(roomId);
   useEffect(() => { nickRef.current = nickname; }, [nickname]);
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const canJoinRoom = Boolean(currentInvite && roomId && nickname.trim());
 
@@ -103,6 +105,14 @@ export default function WatchTogetherPage() {
       const updated = [...history, msg].slice(-200); // keep last 200 messages
       localStorage.setItem(`${CHAT_KEY_PREFIX}${room}`, JSON.stringify(updated));
     } catch { /* ignore */ }
+  }, []);
+
+  const appendUniqueMessage = useCallback((previousMessages, nextMessage) => {
+    if (previousMessages.some((message) => message.id === nextMessage.id)) {
+      return previousMessages;
+    }
+
+    return [...previousMessages, nextMessage];
   }, []);
 
   const loadSavedInvites = useCallback(() => {
@@ -208,6 +218,18 @@ export default function WatchTogetherPage() {
   useEffect(() => {
     if (!canJoinRoom) return;
 
+    const hostname = globalThis.location?.hostname || "";
+    const isSocketSupportedHost = hostname === "localhost"
+      || hostname === "127.0.0.1"
+      || hostname.endsWith(".local")
+      || hostname.includes("vercel.app") === false;
+
+    if (!isSocketSupportedHost) {
+      setIsConnected(false);
+      setActiveSocket(null);
+      return;
+    }
+
     let isMounted = true;
 
     const startSocket = async () => {
@@ -234,21 +256,18 @@ export default function WatchTogetherPage() {
       // We rely on this echo as the single source of truth — no local pre-save.
       socket.on("new-message", (payload) => {
         if (!isMounted) return;
-        setMessages((prev) => {
-          // Guard against duplicate delivery
-          if (prev.some((m) => m.id === payload.id)) return prev;
-          return [...prev, payload];
-        });
+        const nextMessages = appendUniqueMessage(messagesRef.current, payload);
+        messagesRef.current = nextMessages;
+        setMessages(nextMessages);
         saveChatMessage(roomIdRef.current, payload);
       });
 
       socket.on("system-message", (payload) => {
         if (!isMounted) return;
         const msg = { ...payload, type: "system", nickname: "System" };
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.id)) return prev;
-          return [...prev, msg];
-        });
+        const nextMessages = appendUniqueMessage(messagesRef.current, msg);
+        messagesRef.current = nextMessages;
+        setMessages(nextMessages);
         saveChatMessage(roomIdRef.current, msg);
       });
     };
@@ -266,7 +285,7 @@ export default function WatchTogetherPage() {
     };
   // Only reconnect when the room changes or canJoinRoom flips.
   // nickname/roomId are read via refs so they don't trigger reconnects.
-  }, [canJoinRoom, currentInvite, saveChatMessage]);
+  }, [appendUniqueMessage, canJoinRoom, currentInvite, saveChatMessage]);
 
   useEffect(() => {
     if (!isConnected || !canJoinRoom || !socketRef.current) return;
