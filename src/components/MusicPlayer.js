@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import {
   Play,
@@ -149,9 +150,12 @@ const MusicPlayer = ({
           <div className="flex items-center space-x-3 sm:space-x-4 w-full lg:flex-1 min-w-0">
             <div className="w-14 h-14 bg-gradient-to-br from-green-400 to-purple-500 rounded-lg flex items-center justify-center">
               {track.album?.images?.[0] ? (
-                <img
+                <Image
                   src={track.album.images[0].url}
                   alt={track.name}
+                  width={56}
+                  height={56}
+                  sizes="56px"
                   className="w-full h-full object-cover rounded-lg"
                 />
               ) : (

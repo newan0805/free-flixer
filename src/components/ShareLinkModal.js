@@ -9,19 +9,10 @@ export default function ShareLinkModal({
   watchUrl, 
   title = 'Share Watch Together Link' 
 }) {
-  const [shareLink, setShareLink] = useState('');
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && watchUrl) {
-      // Generate the full shareable URL
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const encoded = encodeURIComponent(watchUrl);
-      const fullUrl = `${origin}/watch-together?watch=${encoded}`;
-      setShareLink(fullUrl);
-      setCopied(false);
-    }
-  }, [isOpen, watchUrl]);
+  const [copiedLink, setCopiedLink] = useState('');
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const shareLink = watchUrl ? `${origin}/watch-together?watch=${encodeURIComponent(watchUrl)}` : '';
+  const copied = copiedLink === shareLink;
 
   // Handle ESC key to close
   useEffect(() => {
@@ -52,19 +43,24 @@ export default function ShareLinkModal({
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setCopiedLink(shareLink);
+      setTimeout(() => setCopiedLink(''), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
       alert('Failed to copy link');
     }
   };
 
+  const handleClose = () => {
+    setCopiedLink('');
+    onClose?.();
+  };
+
   if (!isOpen || !shareLink) return null;
 
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
-      onClose?.();
+      handleClose();
     }
   };
 
@@ -111,7 +107,7 @@ export default function ShareLinkModal({
           <ul className="text-sm text-slate-400 space-y-2 list-disc list-inside">
             <li>Copy the link above</li>
             <li>Paste it in your browser address bar or share with friends</li>
-            <li>They'll be automatically taken to Watch Together with this content</li>
+            <li>They&apos;ll be automatically taken to Watch Together with this content</li>
             <li>Set your nickname to start chatting!</li>
           </ul>
         </div>
@@ -119,7 +115,7 @@ export default function ShareLinkModal({
         {/* Action Buttons */}
         <div className="flex gap-3">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 px-4 py-2 bg-slate-800 text-white rounded hover:bg-slate-700 transition font-medium"
           >
             Close
@@ -127,7 +123,7 @@ export default function ShareLinkModal({
           <button
             onClick={() => {
               onOpenNicknameModal?.();
-              onClose();
+              handleClose();
             }}
             className="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition font-medium"
           >
@@ -136,7 +132,7 @@ export default function ShareLinkModal({
         </div>
 
         <p className="text-xs text-slate-500 text-center mt-4">
-          💡 Tip: You can also paste URLs directly on the Watch Together page
+          Tip: You can also paste URLs directly on the Watch Together page
         </p>
       </div>
 

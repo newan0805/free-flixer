@@ -74,7 +74,6 @@ const MovieDetailsPage = ({ params }) => {
   };
 
   const handleShareWatchTogether = () => {
-    const watchUrl = `/movie/${unwrappedParams.id}`;
     setShowShareModal(true);
   };
 

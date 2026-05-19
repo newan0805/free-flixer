@@ -1,21 +1,32 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Music, Play, Heart, Clock, ListMusic, User, LogIn, LogOut, Library, Home, Star, Plus, Mic, Radio, Disc, Headphones, Users } from "lucide-react";
+import { Search, Music, Play, Heart, ListMusic, LogIn, LogOut, Users } from "lucide-react";
 import {
   searchTracks,
   getFeaturedPlaylists,
   getNewReleases,
   getRecommendations,
-  isAuthenticated,
+  isAuthenticated as isSpotifyAuthenticated,
   getCurrentUserProfile,
   getUserPlaylists,
   getUserSavedTracks,
   getUserTopTracks,
   logout,
 } from "@utils/spotifyAuth";
-import MusicPlayer from "@components/MusicPlayer";
+
+const SpotifyImage = ({ src, alt, className, sizes }) => (
+  <Image
+    src={src}
+    alt={alt}
+    width={300}
+    height={300}
+    sizes={sizes}
+    className={className}
+  />
+);
 
 export default function MusicPage() {
   const router = useRouter();
@@ -33,26 +44,67 @@ export default function MusicPage() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check authentication status
-    checkAuthStatus();
-    // Load initial data
-    loadInitialData();
-  }, []);
+    let isMounted = true;
 
-  const checkAuthStatus = async () => {
-    try {
-      const authStatus = isAuthenticated();
-      setIsAuthenticated(authStatus);
-      if (authStatus) {
-        const userProfile = await getCurrentUserProfile();
-        setUser(userProfile);
+    const initializePage = async () => {
+      try {
+        const authStatus = isSpotifyAuthenticated();
+        if (!isMounted) return;
+
+        setIsAuthenticated(authStatus);
+
+        if (authStatus) {
+          const userProfile = await getCurrentUserProfile();
+          if (!isMounted) return;
+          setUser(userProfile);
+        } else {
+          setUser(null);
+        }
+
+        const [playlists, releases, recs] = await Promise.all([
+          getFeaturedPlaylists(),
+          getNewReleases(),
+          getRecommendations(),
+        ]);
+
+        if (!isMounted) return;
+
+        setFeaturedPlaylists(playlists);
+        setNewReleases(releases);
+        setRecommendations(recs);
+
+        if (!authStatus) {
+          setUserPlaylists([]);
+          setUserSavedTracks([]);
+          setUserTopTracks([]);
+          return;
+        }
+
+        const [userPlaylistsData, savedTracksData, topTracksData] = await Promise.all([
+          getUserPlaylists(),
+          getUserSavedTracks(),
+          getUserTopTracks(),
+        ]);
+
+        if (!isMounted) return;
+
+        setUserPlaylists(userPlaylistsData);
+        setUserSavedTracks(savedTracksData);
+        setUserTopTracks(topTracksData);
+      } catch (error) {
+        console.error("Error loading music page:", error);
+        if (!isMounted) return;
+        setIsAuthenticated(false);
+        setUser(null);
       }
-    } catch (error) {
-      console.error("Error checking auth status:", error);
-      setIsAuthenticated(false);
-      setUser(null);
-    }
-  };
+    };
+
+    initializePage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -70,34 +122,10 @@ export default function MusicPage() {
     logout();
     setIsAuthenticated(false);
     setUser(null);
+    setUserPlaylists([]);
+    setUserSavedTracks([]);
+    setUserTopTracks([]);
     router.refresh();
-  };
-
-  const loadInitialData = async () => {
-    try {
-      const [playlists, releases, recs] = await Promise.all([
-        getFeaturedPlaylists(),
-        getNewReleases(),
-        getRecommendations(),
-      ]);
-      setFeaturedPlaylists(playlists);
-      setNewReleases(releases);
-      setRecommendations(recs);
-      
-      // Load user-specific data if authenticated
-      if (isAuthenticated) {
-        const [userPlaylistsData, savedTracksData, topTracksData] = await Promise.all([
-          getUserPlaylists(),
-          getUserSavedTracks(),
-          getUserTopTracks(),
-        ]);
-        setUserPlaylists(userPlaylistsData);
-        setUserSavedTracks(savedTracksData);
-        setUserTopTracks(topTracksData);
-      }
-    } catch (error) {
-      console.error("Error loading initial data:", error);
-    }
   };
 
   const handleSearch = async (e) => {
@@ -158,11 +186,12 @@ export default function MusicPage() {
                 <div className="flex items-center space-x-4 bg-white/10 backdrop-blur-md rounded-full px-6 py-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-purple-500 rounded-full flex items-center justify-center">
                     {user?.images?.[0] ? (
-                      <img
-                        src={user.images[0].url}
-                        alt={user.display_name}
-                        className="w-full h-full object-cover rounded-full"
-                      />
+                        <SpotifyImage
+                          src={user.images[0].url}
+                          alt={user.display_name}
+                          sizes="40px"
+                          className="w-full h-full object-cover rounded-full"
+                        />
                     ) : (
                       <span className="text-white font-semibold text-sm">
                         {user?.display_name?.charAt(0) || 'U'}
@@ -243,9 +272,10 @@ export default function MusicPage() {
                   <div className="flex items-center space-x-6">
                     <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-purple-500 rounded-full flex items-center justify-center">
                       {user.images?.[0] ? (
-                        <img
+                        <SpotifyImage
                           src={user.images[0].url}
                           alt={user.display_name}
+                          sizes="96px"
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
@@ -295,9 +325,10 @@ export default function MusicPage() {
                     >
                       <div className="aspect-square bg-gradient-to-br from-green-400 to-purple-500 rounded-lg mb-4 flex items-center justify-center">
                         {playlist.images[0] ? (
-                          <img
+                          <SpotifyImage
                             src={playlist.images[0].url}
                             alt={playlist.name}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 25vw"
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -341,9 +372,10 @@ export default function MusicPage() {
                         </div>
                         <div className="flex-shrink-0">
                           {track.album.images[0] ? (
-                            <img
+                            <SpotifyImage
                               src={track.album.images[0].url}
                               alt={track.name}
+                              sizes="48px"
                               className="w-12 h-12 object-cover rounded"
                             />
                           ) : (
@@ -398,9 +430,10 @@ export default function MusicPage() {
                           </div>
                           <div className="flex-shrink-0">
                             {track.album.images[0] ? (
-                              <img
+                              <SpotifyImage
                                 src={track.album.images[0].url}
                                 alt={track.name}
+                                sizes="48px"
                                 className="w-12 h-12 object-cover rounded"
                               />
                             ) : (
@@ -447,9 +480,10 @@ export default function MusicPage() {
                     >
                       <div className="aspect-square bg-gradient-to-br from-green-400 to-purple-500 rounded-lg mb-4 flex items-center justify-center">
                         {playlist.images[0] ? (
-                          <img
+                          <SpotifyImage
                             src={playlist.images[0].url}
                             alt={playlist.name}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 25vw"
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -487,9 +521,10 @@ export default function MusicPage() {
                     >
                       <div className="aspect-square bg-gradient-to-br from-blue-400 to-pink-500 rounded-lg mb-4 flex items-center justify-center">
                         {album.images[0] ? (
-                          <img
+                          <SpotifyImage
                             src={album.images[0].url}
                             alt={album.name}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 25vw"
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -533,9 +568,10 @@ export default function MusicPage() {
                         </div>
                         <div className="flex-shrink-0">
                           {track.album.images[0] ? (
-                            <img
+                            <SpotifyImage
                               src={track.album.images[0].url}
                               alt={track.name}
+                              sizes="48px"
                               className="w-12 h-12 object-cover rounded"
                             />
                           ) : (
@@ -571,7 +607,11 @@ export default function MusicPage() {
 
         {activeTab === "search" && (
           <div>
-            {searchResults.length > 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-300">Searching Spotify...</p>
+              </div>
+            ) : searchResults.length > 0 ? (
               <div className="bg-white/5 backdrop-blur-md rounded-xl">
                 <div className="divide-y divide-white/10">
                   {searchResults.map((track, index) => (
@@ -587,9 +627,10 @@ export default function MusicPage() {
                       </div>
                       <div className="flex-shrink-0">
                         {track.album.images[0] ? (
-                          <img
+                          <SpotifyImage
                             src={track.album.images[0].url}
                             alt={track.name}
+                            sizes="48px"
                             className="w-12 h-12 object-cover rounded"
                           />
                         ) : (

@@ -3,15 +3,14 @@
 import { useState, useEffect } from 'react';
 
 export default function NicknameModal({ isOpen, onClose, onConfirm, watchUrl, title = 'Set Your Nickname' }) {
-  const [nickname, setNickname] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      const saved = localStorage.getItem('watchTogetherNickname');
-      if (saved) setNickname(saved);
+  const [nickname, setNickname] = useState(() => {
+    if (typeof globalThis === 'undefined' || !globalThis.localStorage) {
+      return '';
     }
-  }, [isOpen]);
+
+    return localStorage.getItem('watchTogetherNickname') || '';
+  });
+  const [loading, setLoading] = useState(false);
 
   // Handle ESC key to close
   useEffect(() => {
