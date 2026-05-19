@@ -78,6 +78,18 @@ export default function WatchTogetherPage() {
 
   const canJoinRoom = Boolean(currentInvite && roomId && nickname.trim());
 
+  const canUseRealtimeSocket = useCallback(async () => {
+    try {
+      const response = await fetch("/api/socket_io/?EIO=4&transport=polling", {
+        method: "GET",
+        cache: "no-store",
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const activeWatchPath = useMemo(() => {
     if (!currentInvite) return "";
     const info = parseWatchPath(currentInvite);
@@ -218,21 +230,16 @@ export default function WatchTogetherPage() {
   useEffect(() => {
     if (!canJoinRoom) return;
 
-    const hostname = globalThis.location?.hostname || "";
-    const isSocketSupportedHost = hostname === "localhost"
-      || hostname === "127.0.0.1"
-      || hostname.endsWith(".local")
-      || hostname.includes("vercel.app") === false;
-
-    if (!isSocketSupportedHost) {
-      setIsConnected(false);
-      setActiveSocket(null);
-      return;
-    }
-
     let isMounted = true;
 
     const startSocket = async () => {
+      const hasSocketEndpoint = await canUseRealtimeSocket();
+      if (!isMounted || !hasSocketEndpoint) {
+        setIsConnected(false);
+        setActiveSocket(null);
+        return;
+      }
+
       await fetch("/api/socket");
       if (!isMounted) return;
 
@@ -285,7 +292,7 @@ export default function WatchTogetherPage() {
     };
   // Only reconnect when the room changes or canJoinRoom flips.
   // nickname/roomId are read via refs so they don't trigger reconnects.
-  }, [appendUniqueMessage, canJoinRoom, currentInvite, saveChatMessage]);
+  }, [appendUniqueMessage, canJoinRoom, canUseRealtimeSocket, currentInvite, saveChatMessage]);
 
   useEffect(() => {
     if (!isConnected || !canJoinRoom || !socketRef.current) return;

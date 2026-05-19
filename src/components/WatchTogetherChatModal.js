@@ -68,13 +68,22 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   const [gifInput, setGifInput] = useState('');
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messagesRef = useRef(messages);
   const storageKey = useMemo(() => getChatStorageKey(roomId, watchUrl), [roomId, watchUrl]);
-  const isSocketSupportedHost = useMemo(() => {
-    const hostname = globalThis.location?.hostname || '';
-    return hostname === 'localhost'
-      || hostname === '127.0.0.1'
-      || hostname.endsWith('.local')
-      || hostname.includes('vercel.app') === false;
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+  const canUseRealtimeSocket = useCallback(async () => {
+    try {
+      const response = await fetch('/api/socket_io/?EIO=4&transport=polling', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      return response.ok;
+    } catch {
+      return false;
+    }
   }, []);
 
   const scrollToBottom = () => {
@@ -122,39 +131,53 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !roomId || !isSocketSupportedHost) return;
+    if (!isOpen || !roomId) return;
 
-    const nickname = localStorage.getItem('watchTogetherNickname') || 'Anonymous';
+    let isCancelled = false;
 
-    // Connect to socket
-    socketRef.current = io(undefined, {
-      path: '/api/socket_io',
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5
-    });
+    const startSocket = async () => {
+      const hasSocketEndpoint = await canUseRealtimeSocket();
+      if (isCancelled || !hasSocketEndpoint) return;
 
-    socketRef.current.on('connect', () => {
-      socketRef.current.emit('join-room', { roomId, nickname });
-    });
+      const nickname = localStorage.getItem('watchTogetherNickname') || 'Anonymous';
 
-    socketRef.current.on('new-message', (msg) => {
-      setMessages((prev) => appendUniqueMessage(prev, msg, storageKey));
-    });
+      // Connect to socket
+      socketRef.current = io(undefined, {
+        path: '/api/socket_io',
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5
+      });
 
-    socketRef.current.on('system-message', (msg) => {
-      const systemMessage = { ...msg, type: 'system' };
+      socketRef.current.on('connect', () => {
+        socketRef.current.emit('join-room', { roomId, nickname });
+      });
 
-      setMessages((prev) => appendUniqueMessage(prev, systemMessage, storageKey));
-    });
+      socketRef.current.on('new-message', (msg) => {
+        const nextMessages = appendUniqueMessage(messagesRef.current, msg, storageKey);
+        messagesRef.current = nextMessages;
+        setMessages(nextMessages);
+      });
+
+      socketRef.current.on('system-message', (msg) => {
+        const systemMessage = { ...msg, type: 'system' };
+
+        const nextMessages = appendUniqueMessage(messagesRef.current, systemMessage, storageKey);
+        messagesRef.current = nextMessages;
+        setMessages(nextMessages);
+      });
+    };
+
+    startSocket();
 
     return () => {
+      isCancelled = true;
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, [isOpen, roomId, storageKey, isSocketSupportedHost]);
+  }, [canUseRealtimeSocket, isOpen, roomId, storageKey]);
 
   const isValidGifUrl = (url) => {
     return url.match(/\.(gif|png|jpg|jpeg)$/i) || 
