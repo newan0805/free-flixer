@@ -47,18 +47,26 @@ This works on Vercel because the app no longer needs a long-lived server process
 
 ### Required environment variables
 
-Set one of these supported KV pairs in Vercel for production Watch Together rooms:
+Recommended provider: Upstash Redis REST.
 
-```bash
-KV_REST_API_URL=
-KV_REST_API_TOKEN=
-```
+Why this one:
 
-or
+- free tier is usually enough for lightweight room sync and chat
+- low-latency REST API works cleanly with Vercel serverless routes
+- no extra SDK is required in this project
+
+Set this pair for production Watch Together rooms:
 
 ```bash
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
+```
+
+This project also accepts Vercel KV-compatible names if you already have that wired:
+
+```bash
+KV_REST_API_URL=
+KV_REST_API_TOKEN=
 ```
 
 Local development falls back to an in-memory store automatically, so `yarn dev` still works without KV.

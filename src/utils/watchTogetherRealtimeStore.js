@@ -50,8 +50,8 @@ function getEnvValue(...keys) {
 }
 
 function getRedisConfig() {
-  const url = getEnvValue("KV_REST_API_URL", "UPSTASH_REDIS_REST_URL");
-  const token = getEnvValue("KV_REST_API_TOKEN", "UPSTASH_REDIS_REST_TOKEN");
+  const url = getEnvValue("UPSTASH_REDIS_REST_URL", "KV_REST_API_URL");
+  const token = getEnvValue("UPSTASH_REDIS_REST_TOKEN", "KV_REST_API_TOKEN");
   return { url, token, enabled: Boolean(url && token) };
 }
 

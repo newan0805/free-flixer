@@ -22,6 +22,9 @@ const MyListPage = () => {
   const fetchListItems = async () => {
     try {
       setIsLoading(true);
+
+      // Pull latest list data from server when available, then read from local cache.
+      await myList.hydrateFromServer();
       
       // Get all list items
       const allMyListItems = myList.getItems();

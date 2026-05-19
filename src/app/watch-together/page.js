@@ -84,6 +84,8 @@ export default function WatchTogetherPage() {
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const canJoinRoom = Boolean(currentInvite && roomId && nickname.trim());
+  const normalizedRoomId = roomId.trim();
+  const normalizedNickname = nickname.trim();
 
   const activeWatchPath = useMemo(() => {
     if (!currentInvite) return "";
@@ -267,9 +269,15 @@ export default function WatchTogetherPage() {
 
     const startClient = async () => {
       try {
+        if (!normalizedRoomId || !normalizedNickname) {
+          setConnectionError("Room ID and nickname are required before joining.");
+          setIsConnected(false);
+          return;
+        }
+
         await client.emit("join-room", {
-          roomId: roomIdRef.current,
-          nickname: nickRef.current,
+          roomId: normalizedRoomId,
+          nickname: normalizedNickname,
         });
 
         if (!isMounted) return;
@@ -298,15 +306,7 @@ export default function WatchTogetherPage() {
     };
   // Only reconnect when the room changes or canJoinRoom flips.
   // nickname/roomId are read via refs so they don't trigger reconnects.
-  }, [appendUniqueMessage, canJoinRoom, currentInvite, saveChatMessage]);
-
-  useEffect(() => {
-    if (!isConnected || !canJoinRoom || !socketRef.current) return;
-    socketRef.current.emit("join-room", {
-      roomId,
-      nickname: nickname.trim(),
-    }).catch(() => undefined);
-  }, [isConnected, canJoinRoom, roomId, nickname]);
+  }, [appendUniqueMessage, canJoinRoom, currentInvite, normalizedNickname, normalizedRoomId, saveChatMessage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
