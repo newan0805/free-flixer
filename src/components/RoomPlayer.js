@@ -56,13 +56,27 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
   useEffect(() => { seasonRef.current = season; }, [season]);
   useEffect(() => { episodeRef.current = episode; }, [episode]);
 
+  const isSocketSupportedHost = useCallback(() => {
+    if (globalThis.window === undefined) return false;
+
+    const hostname = globalThis.window.location.hostname;
+    return hostname === "localhost"
+      || hostname === "127.0.0.1"
+      || hostname.endsWith(".local")
+      || hostname.includes("vercel.app") === false;
+  }, []);
+
+  const syncUnavailable = useMemo(() => !isSocketSupportedHost(), [isSocketSupportedHost]);
+
   // Reset season/episode when the content changes
   useEffect(() => {
     if (watchUrl !== prevWatchUrl.current) {
       prevWatchUrl.current = watchUrl;
       if (info) {
-        setSeason(info.season ?? 1);
-        setEpisode(info.episode ?? 1);
+        globalThis.setTimeout(() => {
+          setSeason(info.season ?? 1);
+          setEpisode(info.episode ?? 1);
+        }, 0);
       }
     }
   }, [watchUrl, info]);
@@ -109,6 +123,25 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
     });
   }, [socket]);
 
+  const startSyncCountdown = useCallback((at) => {
+    if (countdownRef.current) clearTimeout(countdownRef.current);
+
+    const updateCountdown = () => {
+      const remaining = Math.ceil((at - Date.now()) / 1000);
+      if (remaining > 0) {
+        setSyncCountdown(remaining);
+        countdownRef.current = setTimeout(updateCountdown, 200);
+        return;
+      }
+
+      setSyncCountdown("▶");
+      setPlayKey((currentKey) => currentKey + 1);
+      countdownRef.current = setTimeout(() => setSyncCountdown(null), 900);
+    };
+
+    updateCountdown();
+  }, []);
+
   const embedUrl = useMemo(() => {
     if (!info) return null;
     return getEmbedUrl(selectedServer, {
@@ -141,6 +174,10 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
   useEffect(() => {
     if (!socket) return;
 
+    if (!isSocketSupportedHost()) {
+      return;
+    }
+
     const handleStateUpdate = ({ server, season: s, episode: e }) => {
       if (server !== undefined) { setSelectedServer(server); saveServer(server); }
       if (s !== undefined) setSeason(s);
@@ -148,19 +185,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
     };
 
     const handleSyncPlay = ({ at }) => {
-      if (countdownRef.current) clearTimeout(countdownRef.current);
-      const tick = () => {
-        const remaining = Math.ceil((at - Date.now()) / 1000);
-        if (remaining > 0) {
-          setSyncCountdown(remaining);
-          countdownRef.current = setTimeout(tick, 200);
-        } else {
-          setSyncCountdown("▶");
-          setPlayKey((k) => k + 1);
-          countdownRef.current = setTimeout(() => setSyncCountdown(null), 900);
-        }
-      };
-      tick();
+      startSyncCountdown(at);
     };
 
     socket.on("state-update", handleStateUpdate);
@@ -178,7 +203,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
       socket.off("do-sync-play", handleSyncPlay);
       if (countdownRef.current) clearTimeout(countdownRef.current);
     };
-  }, [socket]);
+  }, [socket, buildLocalState, isSocketSupportedHost, startSyncCountdown]);
 
   // ── Control handlers ─────────────────────────────────────────────────────
   const handleServerChange = (val) => {
@@ -199,7 +224,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
   };
 
   const handleSyncPlay = async () => {
-    if (!socket || !roomId || syncCountdown !== null) return;
+    if (!socket || !roomId || syncCountdown !== null || syncUnavailable) return;
 
     const snapshot = await requestSyncSnapshot();
     const participants = Array.isArray(snapshot?.participants) ? snapshot.participants : [];
@@ -252,6 +277,13 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
         Add a watch link to start playing.
       </div>
     );
+  }
+
+  let syncButtonLabel = "⟳ Sync Play";
+  if (syncUnavailable) {
+    syncButtonLabel = "Sync unavailable on this host";
+  } else if (syncCountdown !== null) {
+    syncButtonLabel = <span className="tabular-nums">{syncCountdown}</span>;
   }
 
   return (
@@ -323,15 +355,11 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
         {socket && roomId && (
           <button
             onClick={handleSyncPlay}
-            disabled={syncCountdown !== null}
+            disabled={syncCountdown !== null || syncUnavailable}
             title="Reload the player for everyone at the same time"
             className="h-9 px-4 rounded-lg bg-green-600/25 border border-green-400/50 text-white text-xs font-semibold hover:bg-green-600/50 transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {syncCountdown === null ? (
-              "⟳ Sync Play"
-            ) : (
-              <span className="tabular-nums">{syncCountdown}</span>
-            )}
+            {syncButtonLabel}
           </button>
         )}
 
@@ -348,6 +376,11 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
           {socket && roomId && (
             <span className="px-2 py-1 rounded-full bg-green-900/40 border border-green-400/30 text-green-300">
               synced
+            </span>
+          )}
+          {syncUnavailable && (
+            <span className="px-2 py-1 rounded-full bg-amber-900/40 border border-amber-400/30 text-amber-300">
+              realtime sync needs a persistent Node host
             </span>
           )}
         </div>
