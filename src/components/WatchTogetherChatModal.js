@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { io } from 'socket.io-client';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { createWatchTogetherClient } from '@utils/watchTogetherClient';
 
 const CHAT_STORAGE_PREFIX = 'watchTogetherChat_';
 
@@ -74,22 +74,6 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
-  const canUseRealtimeSocket = useCallback(async () => {
-    try {
-      await fetch('/api/socket', {
-        method: 'GET',
-        cache: 'no-store',
-      });
-
-      const response = await fetch('/api/socket_io/?EIO=4&transport=polling', {
-        method: 'GET',
-        cache: 'no-store',
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -138,51 +122,45 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   useEffect(() => {
     if (!isOpen || !roomId) return;
 
-    let isCancelled = false;
+    const client = createWatchTogetherClient();
+    socketRef.current = client;
 
-    const startSocket = async () => {
-      const hasSocketEndpoint = await canUseRealtimeSocket();
-      if (isCancelled || !hasSocketEndpoint) return;
-
-      const nickname = localStorage.getItem('watchTogetherNickname') || 'Anonymous';
-
-      // Connect to socket
-      socketRef.current = io(undefined, {
-        path: '/api/socket_io',
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: 5
-      });
-
-      socketRef.current.on('connect', () => {
-        socketRef.current.emit('join-room', { roomId, nickname });
-      });
-
-      socketRef.current.on('new-message', (msg) => {
-        const nextMessages = appendUniqueMessage(messagesRef.current, msg, storageKey);
-        messagesRef.current = nextMessages;
-        setMessages(nextMessages);
-      });
-
-      socketRef.current.on('system-message', (msg) => {
-        const systemMessage = { ...msg, type: 'system' };
-
-        const nextMessages = appendUniqueMessage(messagesRef.current, systemMessage, storageKey);
-        messagesRef.current = nextMessages;
-        setMessages(nextMessages);
-      });
+    const handleNewMessage = (msg) => {
+      const nextMessages = appendUniqueMessage(messagesRef.current, msg, storageKey);
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
     };
 
-    startSocket();
+    const handleSystemMessage = (msg) => {
+      const systemMessage = { ...msg, type: 'system' };
+      const nextMessages = appendUniqueMessage(messagesRef.current, systemMessage, storageKey);
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+    };
 
-    return () => {
-      isCancelled = true;
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+    client.on('new-message', handleNewMessage);
+    client.on('system-message', handleSystemMessage);
+
+    const startClient = async () => {
+      try {
+        const nickname = localStorage.getItem('watchTogetherNickname') || 'Anonymous';
+        await client.emit('join-room', { roomId, nickname });
+      } catch {
+        // Leave the modal usable with local history if realtime is unavailable.
       }
     };
-  }, [canUseRealtimeSocket, isOpen, roomId, storageKey]);
+
+    void startClient();
+
+    return () => {
+      client.off('new-message', handleNewMessage);
+      client.off('system-message', handleSystemMessage);
+      client.disconnect();
+      if (socketRef.current === client) {
+        socketRef.current = null;
+      }
+    };
+  }, [isOpen, roomId, storageKey]);
 
   const isValidGifUrl = (url) => {
     return url.match(/\.(gif|png|jpg|jpeg)$/i) || 

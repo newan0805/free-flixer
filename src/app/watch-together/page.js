@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GifBoard from "@components/GifBoard";
 import NicknameModal from "@components/NicknameModal";
 import RoomPlayer, { parseWatchPath } from "@components/RoomPlayer";
+import { createWatchTogetherClient } from "@utils/watchTogetherClient";
 
 const INVITES_KEY = "watchTogetherInvites";
 const NICKNAME_KEY = "watchTogetherNickname";
@@ -43,7 +44,14 @@ function sanitizeGifUrl(rawUrl) {
   try {
     const parsed = new URL(rawUrl);
     const isAllowedHost = parsed.protocol === "https:"
-      && (parsed.hostname === "giphy.com" || parsed.hostname.endsWith(".giphy.com"));
+      && (
+        parsed.hostname === "giphy.com"
+        || parsed.hostname.endsWith(".giphy.com")
+        || parsed.hostname === "tenor.com"
+        || parsed.hostname.endsWith(".tenor.com")
+        || parsed.hostname === "media.tenor.com"
+        || /\.(gif|png|jpg|jpeg|webp)$/i.test(parsed.pathname)
+      );
     return isAllowedHost ? parsed.toString() : "";
   } catch {
     return "";
@@ -61,9 +69,8 @@ export default function WatchTogetherPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [showGifBoard, setShowGifBoard] = useState(false);
   const [roomUrlCopied, setRoomUrlCopied] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
-
+  const [connectionError, setConnectionError] = useState("");
   const [activeSocket, setActiveSocket] = useState(null);
 
   const socketRef = useRef(null);
@@ -77,23 +84,6 @@ export default function WatchTogetherPage() {
   useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const canJoinRoom = Boolean(currentInvite && roomId && nickname.trim());
-
-  const canUseRealtimeSocket = useCallback(async () => {
-    try {
-      await fetch("/api/socket", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      const response = await fetch("/api/socket_io/?EIO=4&transport=polling", {
-        method: "GET",
-        cache: "no-store",
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  }, []);
 
   const activeWatchPath = useMemo(() => {
     if (!currentInvite) return "";
@@ -179,129 +169,143 @@ export default function WatchTogetherPage() {
   }, []);
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    const timer = globalThis.setTimeout(() => {
+      const storedName = localStorage.getItem(NICKNAME_KEY) || "";
+      setNickname(storedName);
 
-  useEffect(() => {
-    if (!isClient) return;
-    
-    const storedName = localStorage.getItem(NICKNAME_KEY) || "";
-    setNickname(storedName);
-    // Auto-prompt for nickname if not set
-    if (!storedName) {
-      setShowNicknameModal(true);
-    }
-    loadSavedInvites();
+      if (!storedName) {
+        setShowNicknameModal(true);
+      }
 
-    const url = new URL(globalThis.location.href);
-    const watchParam = url.searchParams.get("watch");
-    const roomParam = url.searchParams.get("room") || "";
+      loadSavedInvites();
 
-    if (watchParam) {
-      // watchParam may be: encoded relative path, encoded full URL, or raw path
+      const url = new URL(globalThis.location.href);
+      const watchParam = url.searchParams.get("watch");
+      const roomParam = url.searchParams.get("room") || "";
+
+      if (!watchParam) {
+        return;
+      }
+
       const resolveParam = (input) => {
         try {
-          const p = new URL(input);
-          if (p.pathname === '/watch-together') {
-            const w = p.searchParams.get('watch');
-            return w ? resolveParam(w) : null;
+          const parsed = new URL(input);
+          if (parsed.pathname === "/watch-together") {
+            const nestedWatch = parsed.searchParams.get("watch");
+            return nestedWatch ? resolveParam(nestedWatch) : null;
           }
-          return p.pathname.startsWith('/watch/') ? p.pathname + p.search : null;
-        } catch { /* not an absolute URL */ }
+          return parsed.pathname.startsWith("/watch/") ? parsed.pathname + parsed.search : null;
+        } catch {
+          // ignore absolute URL parsing failures
+        }
+
         try {
-          const p = new URL(input, globalThis.location.origin);
-          if (p.pathname === '/watch-together') {
-            const w = p.searchParams.get('watch');
-            return w ? resolveParam(w) : null;
+          const parsed = new URL(input, globalThis.location.origin);
+          if (parsed.pathname === "/watch-together") {
+            const nestedWatch = parsed.searchParams.get("watch");
+            return nestedWatch ? resolveParam(nestedWatch) : null;
           }
-          return p.pathname.startsWith('/watch/') ? p.pathname + p.search : null;
-        } catch { return null; }
+          return parsed.pathname.startsWith("/watch/") ? parsed.pathname + parsed.search : null;
+        } catch {
+          return null;
+        }
       };
 
       const watchPath = resolveParam(decodeURIComponent(watchParam));
-      if (watchPath) {
-        const fullWatchUrl = `${globalThis.location.origin}${watchPath}`;
-        const savedEntry = persistInvite(fullWatchUrl, roomParam);
-        if (savedEntry) {
-          setCurrentInvite(savedEntry.url);
-          setInviteInput(savedEntry.url);
-          setRoomId(savedEntry.roomId);
-          setMessages(loadChatHistory(savedEntry.roomId));
-        }
+      if (!watchPath) {
+        return;
       }
-    }
-  }, [loadSavedInvites, persistInvite, isClient, loadChatHistory]);
+
+      const fullWatchUrl = `${globalThis.location.origin}${watchPath}`;
+      const savedEntry = persistInvite(fullWatchUrl, roomParam);
+      if (!savedEntry) {
+        return;
+      }
+
+      setCurrentInvite(savedEntry.url);
+      setInviteInput(savedEntry.url);
+      setRoomId(savedEntry.roomId);
+      setMessages(loadChatHistory(savedEntry.roomId));
+    }, 0);
+
+    return () => globalThis.clearTimeout(timer);
+  }, [loadSavedInvites, persistInvite, loadChatHistory]);
 
   useEffect(() => {
     if (!canJoinRoom) return;
 
     let isMounted = true;
 
-    const startSocket = async () => {
-      const hasSocketEndpoint = await canUseRealtimeSocket();
-      if (!isMounted || !hasSocketEndpoint) {
-        setIsConnected(false);
-        setActiveSocket(null);
-        return;
-      }
-
-      const { io } = await import("socket.io-client");
-      const socket = io({ path: "/api/socket_io" });
-      socketRef.current = socket;
-
-      socket.on("connect", () => {
+    const client = createWatchTogetherClient({
+      onStatusChange: (connected) => {
         if (!isMounted) return;
-        setIsConnected(true);
-        setActiveSocket(socket);
-        socket.emit("join-room", { roomId: roomIdRef.current, nickname: nickRef.current });
-      });
+        setIsConnected(connected);
+      },
+    });
 
-      socket.on("disconnect", () => {
-        if (!isMounted) return;
-        setIsConnected(false);
-      });
+    socketRef.current = client;
 
-      // Server echoes the message to everyone in the room (including sender).
-      // We rely on this echo as the single source of truth — no local pre-save.
-      socket.on("new-message", (payload) => {
-        if (!isMounted) return;
-        const nextMessages = appendUniqueMessage(messagesRef.current, payload);
-        messagesRef.current = nextMessages;
-        setMessages(nextMessages);
-        saveChatMessage(roomIdRef.current, payload);
-      });
-
-      socket.on("system-message", (payload) => {
-        if (!isMounted) return;
-        const msg = { ...payload, type: "system", nickname: "System" };
-        const nextMessages = appendUniqueMessage(messagesRef.current, msg);
-        messagesRef.current = nextMessages;
-        setMessages(nextMessages);
-        saveChatMessage(roomIdRef.current, msg);
-      });
+    const handleNewMessage = (payload) => {
+      if (!isMounted) return;
+      const nextMessages = appendUniqueMessage(messagesRef.current, payload);
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+      saveChatMessage(roomIdRef.current, payload);
     };
 
-    startSocket();
+    const handleSystemMessage = (payload) => {
+      if (!isMounted) return;
+      const msg = { ...payload, type: "system", nickname: "System" };
+      const nextMessages = appendUniqueMessage(messagesRef.current, msg);
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
+      saveChatMessage(roomIdRef.current, msg);
+    };
+
+    client.on("new-message", handleNewMessage);
+    client.on("system-message", handleSystemMessage);
+
+    const startClient = async () => {
+      try {
+        await client.emit("join-room", {
+          roomId: roomIdRef.current,
+          nickname: nickRef.current,
+        });
+
+        if (!isMounted) return;
+        setConnectionError("");
+        setActiveSocket(client);
+      } catch (error) {
+        if (!isMounted) return;
+        setConnectionError(error instanceof Error ? error.message : "Unable to join the room.");
+        setIsConnected(false);
+        setActiveSocket(null);
+      }
+    };
+
+    void startClient();
 
     return () => {
       isMounted = false;
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      client.off("new-message", handleNewMessage);
+      client.off("system-message", handleSystemMessage);
+      client.disconnect();
+      if (socketRef.current === client) {
+        socketRef.current = null;
       }
-      socketRef.current = null;
       setActiveSocket(null);
       setIsConnected(false);
     };
   // Only reconnect when the room changes or canJoinRoom flips.
   // nickname/roomId are read via refs so they don't trigger reconnects.
-  }, [appendUniqueMessage, canJoinRoom, canUseRealtimeSocket, currentInvite, saveChatMessage]);
+  }, [appendUniqueMessage, canJoinRoom, currentInvite, saveChatMessage]);
 
   useEffect(() => {
     if (!isConnected || !canJoinRoom || !socketRef.current) return;
     socketRef.current.emit("join-room", {
       roomId,
       nickname: nickname.trim(),
-    });
+    }).catch(() => undefined);
   }, [isConnected, canJoinRoom, roomId, nickname]);
 
   useEffect(() => {
@@ -545,8 +549,14 @@ export default function WatchTogetherPage() {
               </div>
             </div>
 
+            {connectionError && (
+              <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                {connectionError}
+              </div>
+            )}
+
             {/* Share Room Section */}
-            {isClient && currentInvite && roomId && (
+            {currentInvite && roomId && (
               <div className="rounded-lg border border-white/10 bg-black/40 p-3 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1">

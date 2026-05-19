@@ -56,17 +56,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
   useEffect(() => { seasonRef.current = season; }, [season]);
   useEffect(() => { episodeRef.current = episode; }, [episode]);
 
-  const isSocketSupportedHost = useCallback(() => {
-    if (globalThis.window === undefined) return false;
-
-    const hostname = globalThis.window.location.hostname;
-    return hostname === "localhost"
-      || hostname === "127.0.0.1"
-      || hostname.endsWith(".local")
-      || hostname.includes("vercel.app") === false;
-  }, []);
-
-  const syncUnavailable = useMemo(() => !isSocketSupportedHost(), [isSocketSupportedHost]);
+  const syncUnavailable = !socket || !roomId;
 
   // Reset season/episode when the content changes
   useEffect(() => {
@@ -152,6 +142,30 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
     });
   }, [info, selectedServer, season, episode]);
 
+  const safeEmbedUrl = useMemo(() => {
+    if (!embedUrl) return null;
+
+    try {
+      const targetUrl = new URL(embedUrl);
+      const isAllowed = allServers.some((server) => {
+        if (!server.baseUrl) return false;
+
+        try {
+          const baseUrl = new URL(server.baseUrl);
+          const basePath = baseUrl.pathname === "/" ? "/" : baseUrl.pathname.replace(/\/$/, "");
+          return targetUrl.origin === baseUrl.origin
+            && (basePath === "/" || targetUrl.pathname.startsWith(basePath));
+        } catch {
+          return false;
+        }
+      });
+
+      return isAllowed ? embedUrl : null;
+    } catch {
+      return null;
+    }
+  }, [allServers, embedUrl]);
+
   // ── Emit the current playback state to the room ─────────────────────────
   const emitSyncState = useCallback(
     (overrides = {}) => {
@@ -174,10 +188,6 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
   useEffect(() => {
     if (!socket) return;
 
-    if (!isSocketSupportedHost()) {
-      return;
-    }
-
     const handleStateUpdate = ({ server, season: s, episode: e }) => {
       if (server !== undefined) { setSelectedServer(server); saveServer(server); }
       if (s !== undefined) setSeason(s);
@@ -188,24 +198,24 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
       startSyncCountdown(at);
     };
 
-    const handleConnect = () => {
-      const initialState = buildLocalState();
-      if (initialState && roomIdRef.current) {
-        socket.emit("sync-state", { roomId: roomIdRef.current, state: initialState });
-      }
-    };
-
     socket.on("state-update", handleStateUpdate);
     socket.on("do-sync-play", handleSyncPlay);
-    socket.on("connect", handleConnect);
 
     return () => {
       socket.off("state-update", handleStateUpdate);
       socket.off("do-sync-play", handleSyncPlay);
-      socket.off("connect", handleConnect);
       if (countdownRef.current) clearTimeout(countdownRef.current);
     };
-  }, [socket, buildLocalState, isSocketSupportedHost, startSyncCountdown]);
+  }, [socket, startSyncCountdown]);
+
+  useEffect(() => {
+    if (!socket || !roomId) return;
+
+    const initialState = buildLocalState();
+    if (!initialState) return;
+
+    socket.emit("sync-state", { roomId, state: initialState }).catch(() => undefined);
+  }, [socket, roomId, buildLocalState]);
 
   // ── Control handlers ─────────────────────────────────────────────────────
   const handleServerChange = (val) => {
@@ -294,7 +304,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
       <div className="flex flex-wrap items-center gap-3 bg-black/40 border border-white/10 rounded-xl px-4 py-3">
         {/* Server selector */}
         {allServers.length > 1 && (
-          <div className="flex flex-col gap-1 min-w-[120px]">
+          <div className="flex flex-col gap-1 min-w-30">
             <label htmlFor="room-player-server" className="text-xs text-slate-400 tracking-wide">Server</label>
             <select
               id="room-player-server"
@@ -314,7 +324,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
         {/* Season / Episode selectors for TV */}
         {info.type === "tv" && (
           <>
-            <div className="flex flex-col gap-1 min-w-[80px]">
+            <div className="flex flex-col gap-1 min-w-20">
               <label htmlFor="room-player-season" className="text-xs text-slate-400 tracking-wide">Season</label>
               <input
                 id="room-player-season"
@@ -328,7 +338,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
                 className="h-9 px-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm w-16 focus:outline-none"
               />
             </div>
-            <div className="flex flex-col gap-1 min-w-[80px]">
+            <div className="flex flex-col gap-1 min-w-20">
               <label htmlFor="room-player-episode" className="text-xs text-slate-400 tracking-wide">Episode</label>
               <div className="flex items-center gap-1">
                 <input
@@ -382,7 +392,7 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
           )}
           {syncUnavailable && (
             <span className="px-2 py-1 rounded-full bg-amber-900/40 border border-amber-400/30 text-amber-300">
-              realtime sync needs a persistent Node host
+              join a live room to sync playback
             </span>
           )}
         </div>
@@ -402,10 +412,10 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
           </div>
         )}
 
-        {embedUrl ? (
+        {safeEmbedUrl ? (
           <iframe
-            key={`${embedUrl}-${playKey}`}
-            src={embedUrl}
+            key={`${safeEmbedUrl}-${playKey}`}
+            src={safeEmbedUrl}
             className="w-full h-full"
             allowFullScreen
             allow="autoplay; encrypted-media; picture-in-picture"
