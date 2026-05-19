@@ -1,15 +1,74 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { io } from 'socket.io-client';
+
+const CHAT_STORAGE_PREFIX = 'watchTogetherChat_';
+
+function getChatStorageKey(roomId, watchUrl) {
+  return `${CHAT_STORAGE_PREFIX}${roomId || watchUrl || 'default'}`;
+}
+
+function readChatHistory(storageKey) {
+  if (!storageKey || globalThis.window === undefined) return [];
+
+  try {
+    const raw = localStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeChatHistory(storageKey, messages) {
+  if (!storageKey || globalThis.window === undefined) return;
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(messages.slice(-200)));
+  } catch {
+    // Ignore storage quota / privacy mode failures.
+  }
+}
+
+function isGifMessage(text) {
+  return /\.(gif|png|jpg|jpeg)$/i.test(text) || text.includes('giphy.com') || text.includes('tenor.com');
+}
+
+function sanitizeChatText(text) {
+  return String(text ?? '').replace(/[&<>"]|'/g, (char) => {
+    switch (char) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#39;';
+      default:
+        return char;
+    }
+  });
+}
+
+function appendUniqueMessage(previousMessages, message, storageKey) {
+  if (previousMessages.some((item) => item.id === message.id)) return previousMessages;
+
+  const updated = [...previousMessages, message];
+  writeChatHistory(storageKey, updated);
+  return updated;
+}
 
 export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchUrl }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [gifInput, setGifInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const storageKey = useMemo(() => getChatStorageKey(roomId, watchUrl), [roomId, watchUrl]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -18,6 +77,16 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = globalThis.setTimeout(() => {
+      setMessages(readChatHistory(storageKey));
+    }, 0);
+
+    return () => globalThis.clearTimeout(timer);
+  }, [isOpen, storageKey]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -64,11 +133,13 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
     });
 
     socketRef.current.on('new-message', (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => appendUniqueMessage(prev, msg, storageKey));
     });
 
     socketRef.current.on('system-message', (msg) => {
-      setMessages((prev) => [...prev, { ...msg, type: 'system' }]);
+      const systemMessage = { ...msg, type: 'system' };
+
+      setMessages((prev) => appendUniqueMessage(prev, systemMessage, storageKey));
     });
 
     return () => {
@@ -76,7 +147,7 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
         socketRef.current.disconnect();
       }
     };
-  }, [isOpen, roomId]);
+  }, [isOpen, roomId, storageKey]);
 
   const isValidGifUrl = (url) => {
     return url.match(/\.(gif|png|jpg|jpeg)$/i) || 
@@ -89,11 +160,13 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
     if (!text || !socketRef.current) return;
 
     const nickname = localStorage.getItem('watchTogetherNickname') || 'Anonymous';
+    const safeNickname = sanitizeChatText(nickname);
+
     socketRef.current.emit('send-message', {
       roomId,
       message: {
         text,
-        nickname,
+        nickname: safeNickname,
         type: 'text',
       },
     });
@@ -131,11 +204,26 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
     }
   };
 
+  const handleMessageKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  };
+
+  const handleGifKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSendGif();
+    }
+  };
+
   return (
-    <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-4 animate-fade-in"
-      onClick={handleBackdropClick}
-    >
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-4 animate-fade-in">
+      <button
+        type="button"
+        aria-label="Close chat dialog"
+        className="absolute inset-0 cursor-default bg-transparent"
+        onClick={handleBackdropClick}
+      />
       <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full md:max-w-md h-[90vh] md:h-[70vh] flex flex-col animate-slide-up md:animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -156,30 +244,29 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
               No messages yet. Say something!
             </p>
           ) : (
-            messages.map((msg, idx) => (
-              <div key={idx} className={msg.type === 'system' ? 'text-center' : ''}>
+            messages.map((msg) => (
+              <div key={msg.id || `${msg.createdAt}-${msg.nickname}-${msg.text}`} className={msg.type === 'system' ? 'text-center' : ''}>
                 {msg.type === 'system' ? (
-                  <p className="text-slate-500 text-sm italic">{msg.text}</p>
+                  <p className="text-slate-500 text-sm italic">{String(msg.text ?? '')}</p>
                 ) : (
                   <div>
-                    <p className="text-blue-400 text-sm font-semibold">{msg.nickname}</p>
-                    {msg.text.match(/\.(gif|png|jpg|jpeg)$/i) || 
-                     msg.text.includes('giphy.com') || 
-                     msg.text.includes('tenor.com') ? (
-                      <img
-                        src={msg.text}
-                        alt="GIF"
-                        className="max-w-full max-h-48 rounded mt-1"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
+                    <p className="text-blue-400 text-sm font-semibold">{String(msg.nickname ?? '')}</p>
+                    {isGifMessage(msg.text) ? (
+                      <p className="text-white wrap-break-word">GIF shared: {String(msg.text ?? '')}</p>
                     ) : (
-                      <p className="text-white break-words">{msg.text}</p>
+                      <p className="text-white wrap-break-word">{String(msg.text ?? '')}</p>
                     )}
-                    <p className="text-slate-500 text-xs mt-1">
-                      {new Date(msg.createdAt).toLocaleTimeString()}
-                    </p>
+                    {(() => {
+                      const createdAt = Number.isFinite(Number(msg.createdAt))
+                        ? Number(msg.createdAt)
+                        : Date.now();
+
+                      return (
+                        <p className="text-slate-500 text-xs mt-1">
+                          {new Date(createdAt).toLocaleTimeString()}
+                        </p>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
@@ -196,13 +283,13 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              onKeyDown={handleMessageKeyDown}
               placeholder="Type a message..."
               className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputText.trim() || loading}
+              disabled={!inputText.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
             >
               Send
@@ -215,13 +302,13 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
               type="text"
               value={gifInput}
               onChange={(e) => setGifInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendGif()}
+              onKeyDown={handleGifKeyDown}
               placeholder="Paste GIF URL..."
               className="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded text-white placeholder-slate-400 focus:outline-none focus:border-purple-500"
             />
             <button
               onClick={handleSendGif}
-              disabled={!gifInput.trim() || loading}
+              disabled={!gifInput.trim()}
               className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition disabled:opacity-50"
             >
               🎬 GIF
@@ -277,3 +364,12 @@ export default function WatchTogetherChatModal({ isOpen, onClose, roomId, watchU
     </div>
   );
 }
+
+const noopPropType = () => null;
+
+WatchTogetherChatModal.propTypes = {
+  isOpen: noopPropType,
+  onClose: noopPropType,
+  roomId: noopPropType,
+  watchUrl: noopPropType,
+};

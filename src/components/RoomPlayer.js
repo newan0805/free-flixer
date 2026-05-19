@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import PropTypes from 'prop-types';
 import { getAvailableServers, getSavedServer, saveServer, getEmbedUrl } from "@utils/servers";
 
 /**
@@ -17,8 +18,8 @@ export function parseWatchPath(path) {
     if (parts[0] !== "watch" || !parts[1] || !parts[2]) return null;
     const type = parts[1]; // "movie" or "tv"
     const tmdbId = parts[2];
-    const season = parseInt(url.searchParams.get("season") || "1", 10);
-    const episode = parseInt(url.searchParams.get("episode") || "1", 10);
+    const season = Number.parseInt(url.searchParams.get("season") || "1", 10);
+    const episode = Number.parseInt(url.searchParams.get("episode") || "1", 10);
     return { type, tmdbId, season, episode };
   } catch {
     return null;
@@ -45,6 +46,15 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
 
   const countdownRef = useRef(null);
   const prevWatchUrl = useRef(watchUrl);
+  const roomIdRef = useRef(roomId);
+  const selectedServerRef = useRef(selectedServer);
+  const seasonRef = useRef(season);
+  const episodeRef = useRef(episode);
+
+  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
+  useEffect(() => { selectedServerRef.current = selectedServer; }, [selectedServer]);
+  useEffect(() => { seasonRef.current = season; }, [season]);
+  useEffect(() => { episodeRef.current = episode; }, [episode]);
 
   // Reset season/episode when the content changes
   useEffect(() => {
@@ -56,6 +66,48 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
       }
     }
   }, [watchUrl, info]);
+
+  const buildLocalState = useCallback((overrides = {}) => {
+    if (!info) return null;
+
+    return {
+      type: info.type,
+      tmdbId: info.tmdbId,
+      server: overrides.server ?? selectedServerRef.current,
+      season: overrides.season ?? seasonRef.current,
+      episode: overrides.episode ?? episodeRef.current,
+    };
+  }, [info]);
+
+  const sameTimeline = useCallback((left, right) => {
+    if (!left || !right) return false;
+
+    return left.type === right.type
+      && left.tmdbId === right.tmdbId
+      && left.server === right.server
+      && Number(left.season) === Number(right.season)
+      && Number(left.episode) === Number(right.episode);
+  }, []);
+
+  const formatTimeline = useCallback((state) => {
+    if (!state) return "unknown timeline";
+
+    const chapter = state.type === "tv"
+      ? `S${state.season} E${state.episode}`
+      : "movie";
+
+    return `${chapter} on server ${state.server || "default"}`;
+  }, []);
+
+  const requestSyncSnapshot = useCallback(() => {
+    if (!socket || !roomIdRef.current) return Promise.resolve(null);
+
+    return new Promise((resolve) => {
+      socket.emit("sync-check", { roomId: roomIdRef.current }, (snapshot) => {
+        resolve(snapshot || null);
+      });
+    });
+  }, [socket]);
 
   const embedUrl = useMemo(() => {
     if (!info) return null;
@@ -114,6 +166,13 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
     socket.on("state-update", handleStateUpdate);
     socket.on("do-sync-play", handleSyncPlay);
 
+    socket.on("connect", () => {
+      const initialState = buildLocalState();
+      if (initialState && roomIdRef.current) {
+        socket.emit("sync-state", { roomId: roomIdRef.current, state: initialState });
+      }
+    });
+
     return () => {
       socket.off("state-update", handleStateUpdate);
       socket.off("do-sync-play", handleSyncPlay);
@@ -139,8 +198,51 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
     emitSyncState({ episode: val });
   };
 
-  const handleSyncPlay = () => {
+  const handleSyncPlay = async () => {
     if (!socket || !roomId || syncCountdown !== null) return;
+
+    const snapshot = await requestSyncSnapshot();
+    const participants = Array.isArray(snapshot?.participants) ? snapshot.participants : [];
+    const activeParticipants = participants.filter((participant) => participant.state);
+    const leader = snapshot?.leader || activeParticipants[0] || null;
+    const localState = buildLocalState();
+
+    const mismatch = Boolean(leader?.state) && !sameTimeline(localState, leader.state);
+    if (!mismatch) {
+      socket.emit("sync-play", { roomId });
+      return;
+    }
+
+    const participantLines = activeParticipants.length > 0
+      ? activeParticipants.map((participant) => `${participant.nickname}: ${formatTimeline(participant.state)}`).join("\n")
+      : "No participant timeline data is available yet.";
+
+    const leaderLabel = leader?.nickname
+      ? `${leader.nickname} (${formatTimeline(leader.state)})`
+      : "the most advanced timeline";
+
+    const shouldSync = globalThis.confirm(
+      `Room timelines do not match.\n\nMost advanced: ${leaderLabel}\n\nRoom timelines:\n${participantLines}\n\nSync everyone to the most advanced timeline? Choose Cancel to keep playing without syncing.`
+    );
+
+    if (!shouldSync || !leader?.state) {
+      return;
+    }
+
+    const alignedState = {
+      type: leader.state.type ?? localState?.type,
+      tmdbId: leader.state.tmdbId ?? localState?.tmdbId,
+      server: leader.state.server ?? selectedServerRef.current,
+      season: leader.state.season ?? seasonRef.current,
+      episode: leader.state.episode ?? episodeRef.current,
+    };
+
+    setSelectedServer(alignedState.server);
+    setSeason(alignedState.season);
+    setEpisode(alignedState.episode);
+    saveServer(alignedState.server);
+
+    socket.emit("sync-state", { roomId, state: alignedState });
     socket.emit("sync-play", { roomId });
   };
 
@@ -159,8 +261,9 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
         {/* Server selector */}
         {allServers.length > 1 && (
           <div className="flex flex-col gap-1 min-w-[120px]">
-            <label className="text-xs text-slate-400 tracking-wide">Server</label>
+            <label htmlFor="room-player-server" className="text-xs text-slate-400 tracking-wide">Server</label>
             <select
+              id="room-player-server"
               value={selectedServer}
               onChange={(e) => handleServerChange(e.target.value)}
               className="h-9 px-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm focus:outline-none"
@@ -178,27 +281,29 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
         {info.type === "tv" && (
           <>
             <div className="flex flex-col gap-1 min-w-[80px]">
-              <label className="text-xs text-slate-400 tracking-wide">Season</label>
+              <label htmlFor="room-player-season" className="text-xs text-slate-400 tracking-wide">Season</label>
               <input
+                id="room-player-season"
                 type="number"
                 min={1}
                 value={season}
                 onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
+                  const v = Number.parseInt(e.target.value, 10);
                   if (v > 0) handleSeasonChange(v);
                 }}
                 className="h-9 px-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm w-16 focus:outline-none"
               />
             </div>
             <div className="flex flex-col gap-1 min-w-[80px]">
-              <label className="text-xs text-slate-400 tracking-wide">Episode</label>
+              <label htmlFor="room-player-episode" className="text-xs text-slate-400 tracking-wide">Episode</label>
               <div className="flex items-center gap-1">
                 <input
+                  id="room-player-episode"
                   type="number"
                   min={1}
                   value={episode}
                   onChange={(e) => {
-                    const v = parseInt(e.target.value, 10);
+                    const v = Number.parseInt(e.target.value, 10);
                     if (v > 0) handleEpisodeChange(v);
                   }}
                   className="h-9 px-2 rounded-lg bg-white/5 border border-white/15 text-white text-sm w-16 focus:outline-none"
@@ -222,10 +327,10 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
             title="Reload the player for everyone at the same time"
             className="h-9 px-4 rounded-lg bg-green-600/25 border border-green-400/50 text-white text-xs font-semibold hover:bg-green-600/50 transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {syncCountdown !== null ? (
-              <span className="tabular-nums">{syncCountdown}</span>
-            ) : (
+            {syncCountdown === null ? (
               "⟳ Sync Play"
+            ) : (
+              <span className="tabular-nums">{syncCountdown}</span>
             )}
           </button>
         )}
@@ -281,3 +386,14 @@ export default function RoomPlayer({ watchUrl, title, socket, roomId }) {
     </div>
   );
 }
+
+RoomPlayer.propTypes = {
+  watchUrl: PropTypes.string.isRequired,
+  title: PropTypes.string,
+  socket: PropTypes.shape({
+    emit: PropTypes.func,
+    on: PropTypes.func,
+    off: PropTypes.func,
+  }),
+  roomId: PropTypes.string,
+};
